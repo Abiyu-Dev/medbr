@@ -1,0 +1,5539 @@
+openapi: 3.0.3
+info:
+  title: MedBridge Ethiopia API
+  version: 1.0.0
+  description: Multi-facility healthcare supply coordination backend. The Gemini AI
+    layer never writes stock; all transfers and stock changes require explicit human
+    action through their own endpoints.
+paths:
+  /api/v1/auth/token/:
+    post:
+      operationId: v1_auth_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedBridgeTokenObtainPairRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MedBridgeTokenObtainPairRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MedBridgeTokenObtainPairRequest'
+        required: true
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/token/refresh/:
+    post:
+      operationId: v1_auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/auth/token/verify/:
+    post:
+      operationId: v1_auth_token_verify_create
+      description: |-
+        Takes a token and indicates if it is valid.  This view provides no
+        information about a token's fitness for a particular use.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenVerifyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenVerifyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenVerifyRequest'
+        required: true
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/me/:
+    get:
+      operationId: v1_auth_me_retrieve
+      tags:
+      - Auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/facilities/{facility_pk}/users/:
+    get:
+      operationId: v1_facilities_users_list
+      parameters:
+      - in: path
+        name: facility_pk
+        schema:
+          type: integer
+        required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Facilities
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserList'
+          description: ''
+    post:
+      operationId: v1_facilities_users_create
+      parameters:
+      - in: path
+        name: facility_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Facilities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreate'
+          description: ''
+  /api/v1/facilities/{facility_pk}/users/{id}/deactivate/:
+    post:
+      operationId: v1_facilities_users_deactivate_create
+      parameters:
+      - in: path
+        name: facility_pk
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Facilities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/facilities/applications/:
+    get:
+      operationId: v1_facilities_applications_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Facilities
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFacilityList'
+          description: ''
+    post:
+      operationId: v1_facilities_applications_create
+      tags:
+      - Facilities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacilityApplicationCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FacilityApplicationCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FacilityApplicationCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacilityApplicationCreate'
+          description: ''
+  /api/v1/facilities/applications/{id}/:
+    get:
+      operationId: v1_facilities_applications_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this facility.
+        required: true
+      tags:
+      - Facilities
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Facility'
+          description: ''
+  /api/v1/facilities/applications/{id}/approve/:
+    post:
+      operationId: v1_facilities_applications_approve_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this facility.
+        required: true
+      tags:
+      - Facilities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacilityRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FacilityRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FacilityRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Facility'
+          description: ''
+  /api/v1/facilities/applications/{id}/reject/:
+    post:
+      operationId: v1_facilities_applications_reject_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this facility.
+        required: true
+      tags:
+      - Facilities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacilityRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FacilityRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FacilityRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Facility'
+          description: ''
+  /api/v1/facilities/:
+    get:
+      operationId: v1_facilities_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Facilities
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFacilityList'
+          description: ''
+  /api/v1/facilities/map/:
+    get:
+      operationId: v1_facilities_map_retrieve
+      tags:
+      - Facilities
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Facility'
+          description: ''
+  /api/v1/facilities/{id}/:
+    get:
+      operationId: v1_facilities_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Facilities
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Facility'
+          description: ''
+    patch:
+      operationId: v1_facilities_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Facilities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFacilityUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFacilityUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFacilityUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacilityUpdate'
+          description: ''
+    put:
+      operationId: v1_facilities_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Facilities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacilityUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FacilityUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FacilityUpdateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacilityUpdate'
+          description: ''
+  /api/v1/facilities/{id}/suspend/:
+    post:
+      operationId: v1_facilities_suspend_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Facilities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacilityRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FacilityRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FacilityRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Facility'
+          description: ''
+  /api/v1/stock-receipts/:
+    post:
+      operationId: v1_stock_receipts_create
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/stock-consumption/:
+    post:
+      operationId: v1_stock_consumption_create
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/stock-wastage/:
+    post:
+      operationId: v1_stock_wastage_create
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/stock-adjustments/:
+    post:
+      operationId: v1_stock_adjustments_create
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/inventory/summary/:
+    get:
+      operationId: v1_inventory_summary_retrieve
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/inventory/shortages/:
+    get:
+      operationId: v1_inventory_shortages_retrieve
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/inventory/expiring/:
+    get:
+      operationId: v1_inventory_expiring_retrieve
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/products/:
+    get:
+      operationId: v1_products_list
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: boolean
+      - in: query
+        name: category
+        schema:
+          type: string
+          enum:
+          - MEDICINE
+          - VACCINE
+        description: |-
+          * `MEDICINE` - Medicine
+          * `VACCINE` - Vaccine
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: requires_cold_chain
+        schema:
+          type: boolean
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductList'
+          description: ''
+    post:
+      operationId: v1_products_create
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api/v1/products/{id}/:
+    get:
+      operationId: v1_products_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    patch:
+      operationId: v1_products_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProductRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProductRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProductRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    put:
+      operationId: v1_products_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api/v1/batches/:
+    get:
+      operationId: v1_batches_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStockBatchList'
+          description: ''
+  /api/v1/batches/{id}/:
+    get:
+      operationId: v1_batches_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockBatch'
+          description: ''
+    patch:
+      operationId: v1_batches_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStockBatchUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedStockBatchUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedStockBatchUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockBatchUpdate'
+          description: ''
+  /api/v1/stock-movements/:
+    get:
+      operationId: v1_stock_movements_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStockMovementList'
+          description: ''
+  /api/v1/stock-movements/{id}/:
+    get:
+      operationId: v1_stock_movements_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockMovement'
+          description: ''
+  /api/v1/equipment/:
+    get:
+      operationId: v1_equipment_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEquipmentList'
+          description: ''
+    post:
+      operationId: v1_equipment_create
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EquipmentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EquipmentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Equipment'
+          description: ''
+  /api/v1/equipment/{id}/:
+    get:
+      operationId: v1_equipment_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Equipment'
+          description: ''
+    patch:
+      operationId: v1_equipment_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedEquipmentUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedEquipmentUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedEquipmentUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentUpdate'
+          description: ''
+    put:
+      operationId: v1_equipment_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EquipmentUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EquipmentUpdateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentUpdate'
+          description: ''
+  /api/v1/transfers/:
+    get:
+      operationId: v1_transfers_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Transfers
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTransferRequestList'
+          description: ''
+    post:
+      operationId: v1_transfers_create
+      tags:
+      - Transfers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequestCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TransferRequestCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TransferRequestCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferRequestCreate'
+          description: ''
+  /api/v1/transfers/{id}/:
+    get:
+      operationId: v1_transfers_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Transfers
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferRequest'
+          description: ''
+  /api/v1/transfers/{id}/approve/:
+    post:
+      operationId: v1_transfers_approve_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Transfers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TransferRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TransferRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferRequest'
+          description: ''
+  /api/v1/transfers/{id}/cancel/:
+    post:
+      operationId: v1_transfers_cancel_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Transfers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TransferRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TransferRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferRequest'
+          description: ''
+  /api/v1/transfers/{id}/confirm-receipt/:
+    post:
+      operationId: v1_transfers_confirm_receipt_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Transfers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TransferRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TransferRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferRequest'
+          description: ''
+  /api/v1/transfers/{id}/dispatch/:
+    post:
+      operationId: v1_transfers_dispatch_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Transfers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TransferRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TransferRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferRequest'
+          description: ''
+  /api/v1/transfers/{id}/reject/:
+    post:
+      operationId: v1_transfers_reject_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Transfers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TransferRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TransferRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferRequest'
+          description: ''
+  /api/v1/transfers/{transfer_pk}/delivery-coordination/:
+    get:
+      operationId: v1_transfers_delivery_coordination_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: path
+        name: transfer_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Coordination
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDeliveryCoordinationList'
+          description: ''
+    post:
+      operationId: v1_transfers_delivery_coordination_create
+      parameters:
+      - in: path
+        name: transfer_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Coordination
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryCoordinationCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DeliveryCoordinationCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DeliveryCoordinationCreateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryCoordinationCreate'
+          description: ''
+  /api/v1/central/supply-gaps/:
+    get:
+      operationId: v1_central_supply_gaps_list
+      parameters:
+      - in: query
+        name: assigned_to
+        schema:
+          type: integer
+      - in: query
+        name: facility
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: priority
+        schema:
+          type: string
+          enum:
+          - CRITICAL
+          - HIGH
+          - LOW
+          - MEDIUM
+        description: |-
+          * `CRITICAL` - Critical
+          * `HIGH` - High
+          * `MEDIUM` - Medium
+          * `LOW` - Low
+      - in: query
+        name: product
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ACTION_PLANNED
+          - ASSIGNED
+          - CLOSED
+          - ESCALATED
+          - OPEN
+          - RESOLVED
+          - UNDER_REVIEW
+        description: |-
+          * `OPEN` - Open
+          * `UNDER_REVIEW` - Under Review
+          * `ASSIGNED` - Assigned
+          * `ACTION_PLANNED` - Action Planned
+          * `ESCALATED` - Escalated
+          * `RESOLVED` - Resolved
+          * `CLOSED` - Closed
+      tags:
+      - Coordination
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSupplyGapReportList'
+          description: ''
+  /api/v1/central/supply-gaps/refresh/:
+    post:
+      operationId: v1_central_supply_gaps_refresh_create
+      tags:
+      - Coordination
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/central/supply-gaps/{id}/:
+    get:
+      operationId: v1_central_supply_gaps_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this supply gap report.
+        required: true
+      tags:
+      - Coordination
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplyGapReport'
+          description: ''
+  /api/v1/central/supply-gaps/{id}/assign/:
+    post:
+      operationId: v1_central_supply_gaps_assign_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this supply gap report.
+        required: true
+      tags:
+      - Coordination
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplyGapReport'
+          description: ''
+  /api/v1/central/supply-gaps/{id}/escalate/:
+    post:
+      operationId: v1_central_supply_gaps_escalate_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this supply gap report.
+        required: true
+      tags:
+      - Coordination
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplyGapReport'
+          description: ''
+  /api/v1/central/supply-gaps/{id}/resolve/:
+    post:
+      operationId: v1_central_supply_gaps_resolve_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this supply gap report.
+        required: true
+      tags:
+      - Coordination
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplyGapReport'
+          description: ''
+  /api/v1/vaccines/:
+    get:
+      operationId: v1_vaccines_retrieve
+      tags:
+      - Vaccinations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/vaccinations/due/:
+    get:
+      operationId: v1_vaccinations_due_retrieve
+      tags:
+      - Vaccinations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/vaccinations/overdue/:
+    get:
+      operationId: v1_vaccinations_overdue_retrieve
+      tags:
+      - Vaccinations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/patients/:
+    get:
+      operationId: v1_patients_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Vaccinations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPatientList'
+          description: ''
+    post:
+      operationId: v1_patients_create
+      tags:
+      - Vaccinations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatientCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatientCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientCreate'
+          description: ''
+  /api/v1/patients/{id}/:
+    get:
+      operationId: v1_patients_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Vaccinations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+          description: ''
+    patch:
+      operationId: v1_patients_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Vaccinations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPatientUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPatientUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPatientUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientUpdate'
+          description: ''
+  /api/v1/vaccination-schedules/:
+    get:
+      operationId: v1_vaccination_schedules_list
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: boolean
+      - in: query
+        name: dose_number
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: vaccine_product
+        schema:
+          type: integer
+      tags:
+      - Vaccinations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedVaccineScheduleList'
+          description: ''
+    post:
+      operationId: v1_vaccination_schedules_create
+      tags:
+      - Vaccinations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VaccineScheduleCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VaccineScheduleCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VaccineScheduleCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaccineScheduleCreate'
+          description: ''
+  /api/v1/vaccination-schedules/{id}/:
+    get:
+      operationId: v1_vaccination_schedules_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this vaccine schedule.
+        required: true
+      tags:
+      - Vaccinations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaccineSchedule'
+          description: ''
+    patch:
+      operationId: v1_vaccination_schedules_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this vaccine schedule.
+        required: true
+      tags:
+      - Vaccinations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedVaccineScheduleRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedVaccineScheduleRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedVaccineScheduleRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaccineSchedule'
+          description: ''
+  /api/v1/vaccination-records/:
+    get:
+      operationId: v1_vaccination_records_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Vaccinations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedVaccinationRecordList'
+          description: ''
+    post:
+      operationId: v1_vaccination_records_create
+      tags:
+      - Vaccinations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VaccinationRecordCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VaccinationRecordCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VaccinationRecordCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaccinationRecordCreate'
+          description: ''
+  /api/v1/vaccination-records/{id}/:
+    get:
+      operationId: v1_vaccination_records_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Vaccinations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaccinationRecord'
+          description: ''
+  /api/v1/vaccination-followups/:
+    get:
+      operationId: v1_vaccination_followups_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Vaccinations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedVaccineFollowUpList'
+          description: ''
+    post:
+      operationId: v1_vaccination_followups_create
+      tags:
+      - Vaccinations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VaccineFollowUpCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VaccineFollowUpCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VaccineFollowUpCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaccineFollowUpCreate'
+          description: ''
+  /api/v1/vaccination-followups/{id}/:
+    get:
+      operationId: v1_vaccination_followups_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Vaccinations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaccineFollowUp'
+          description: ''
+  /api/v1/vaccination-followups/{id}/cancel/:
+    post:
+      operationId: v1_vaccination_followups_cancel_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Vaccinations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VaccineFollowUpRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VaccineFollowUpRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VaccineFollowUpRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaccineFollowUp'
+          description: ''
+  /api/v1/vaccination-followups/{id}/contact/:
+    post:
+      operationId: v1_vaccination_followups_contact_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Vaccinations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VaccineFollowUpRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VaccineFollowUpRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VaccineFollowUpRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaccineFollowUp'
+          description: ''
+  /api/v1/vaccination-followups/{id}/mark-review-required/:
+    post:
+      operationId: v1_vaccination_followups_mark_review_required_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Vaccinations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VaccineFollowUpRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VaccineFollowUpRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VaccineFollowUpRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaccineFollowUp'
+          description: ''
+  /api/v1/ai/analyze-inventory/:
+    post:
+      operationId: v1_ai_analyze_inventory_create
+      description: Run Gemini inventory analysis. Returns an AIRecommendation record.
+        The AI never writes stock or creates transfers — its output is advisory and
+        requires review via `/ai/recommendations/{id}/approve/`.
+      tags:
+      - AI
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyzeInventoryRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AnalyzeInventoryRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AnalyzeInventoryRequestRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIRecommendationDetail'
+          description: ''
+  /api/v1/ai/prioritize-supply-gaps/:
+    post:
+      operationId: v1_ai_prioritize_supply_gaps_create
+      tags:
+      - AI
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrioritizeGapsRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PrioritizeGapsRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PrioritizeGapsRequestRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIRecommendationDetail'
+          description: ''
+  /api/v1/ai/summarize-vaccination-demand/:
+    post:
+      operationId: v1_ai_summarize_vaccination_demand_create
+      tags:
+      - AI
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SummarizeVaccinationRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SummarizeVaccinationRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SummarizeVaccinationRequestRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIRecommendationDetail'
+          description: ''
+  /api/v1/ai/recommendations/:
+    get:
+      operationId: v1_ai_recommendations_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - AI
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAIRecommendationList'
+          description: ''
+  /api/v1/ai/recommendations/{id}/:
+    get:
+      operationId: v1_ai_recommendations_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - AI
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIRecommendationDetail'
+          description: ''
+  /api/v1/ai/recommendations/{id}/approve/:
+    post:
+      operationId: v1_ai_recommendations_approve_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - AI
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIRecommendation'
+          description: ''
+  /api/v1/ai/recommendations/{id}/reject/:
+    post:
+      operationId: v1_ai_recommendations_reject_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - AI
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIRecommendation'
+          description: ''
+  /api/v1/dashboard/facility-summary/:
+    get:
+      operationId: v1_dashboard_facility_summary_retrieve
+      description: 'Facility-scoped operational summary: inventory, shortages, near-expiry,
+        transfers, vaccinations, equipment, recent movements, audit activity, and
+        data freshness. Central users must pass `?facility=<id>`.'
+      tags:
+      - Dashboards
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/dashboard/central-summary/:
+    get:
+      operationId: v1_dashboard_central_summary_retrieve
+      description: 'Nationwide central summary: facility counts, stock totals, top
+        active supply gaps, near-expiry redistribution candidates, transfer and delivery
+        pipeline counts, vaccination follow-up totals, and the pending AI recommendation
+        queue. Central users only.'
+      tags:
+      - Dashboards
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/audit/logs/:
+    get:
+      operationId: v1_audit_logs_list
+      description: |-
+        Read-only audit log. Scoping rules:
+          * SYSTEM_ADMIN:           everything
+          * CENTRAL_COORDINATOR:    operational logs, excluding patient-level PII
+          * FACILITY_MANAGER:       own facility (actions by its staff + facility lifecycle)
+          * everyone else:          own actions only
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Audit
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditLogList'
+          description: ''
+  /api/v1/audit/logs/{id}/:
+    get:
+      operationId: v1_audit_logs_retrieve
+      description: |-
+        Read-only audit log. Scoping rules:
+          * SYSTEM_ADMIN:           everything
+          * CENTRAL_COORDINATOR:    operational logs, excluding patient-level PII
+          * FACILITY_MANAGER:       own facility (actions by its staff + facility lifecycle)
+          * everyone else:          own actions only
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Audit
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLog'
+          description: ''
+components:
+  schemas:
+    AIRecommendation:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        analysis_type:
+          allOf:
+          - $ref: '#/components/schemas/AnalysisTypeEnum'
+          readOnly: true
+        analysis_type_display:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Status436Enum'
+          readOnly: true
+        status_display:
+          type: string
+          readOnly: true
+        scope_facility:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Null means a nationwide/central analysis.
+        scope_facility_name:
+          type: string
+          readOnly: true
+        requested_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        requested_by_username:
+          type: string
+          readOnly: true
+        model_name:
+          type: string
+          readOnly: true
+        summary:
+          type: string
+          readOnly: true
+        validated_output:
+          readOnly: true
+        validation_errors:
+          readOnly: true
+        error:
+          type: string
+          readOnly: true
+        reviewed_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        reviewed_by_username:
+          type: string
+          readOnly: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        review_note:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - analysis_type
+      - analysis_type_display
+      - created_at
+      - error
+      - id
+      - model_name
+      - requested_by
+      - requested_by_username
+      - review_note
+      - reviewed_at
+      - reviewed_by
+      - reviewed_by_username
+      - scope_facility
+      - scope_facility_name
+      - status
+      - status_display
+      - summary
+      - updated_at
+      - validated_output
+      - validation_errors
+    AIRecommendationDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        analysis_type:
+          allOf:
+          - $ref: '#/components/schemas/AnalysisTypeEnum'
+          readOnly: true
+        analysis_type_display:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Status436Enum'
+          readOnly: true
+        status_display:
+          type: string
+          readOnly: true
+        scope_facility:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Null means a nationwide/central analysis.
+        scope_facility_name:
+          type: string
+          readOnly: true
+        requested_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        requested_by_username:
+          type: string
+          readOnly: true
+        model_name:
+          type: string
+          readOnly: true
+        summary:
+          type: string
+          readOnly: true
+        validated_output:
+          readOnly: true
+        validation_errors:
+          readOnly: true
+        error:
+          type: string
+          readOnly: true
+        reviewed_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        reviewed_by_username:
+          type: string
+          readOnly: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        review_note:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        input_snapshot:
+          readOnly: true
+        raw_output:
+          readOnly: true
+      required:
+      - analysis_type
+      - analysis_type_display
+      - created_at
+      - error
+      - id
+      - input_snapshot
+      - model_name
+      - raw_output
+      - requested_by
+      - requested_by_username
+      - review_note
+      - reviewed_at
+      - reviewed_by
+      - reviewed_by_username
+      - scope_facility
+      - scope_facility_name
+      - status
+      - status_display
+      - summary
+      - updated_at
+      - validated_output
+      - validation_errors
+    AnalysisTypeEnum:
+      enum:
+      - INVENTORY_ANALYSIS
+      - SUPPLY_GAP_PRIORITIZATION
+      - VACCINATION_DEMAND_SUMMARY
+      type: string
+      description: |-
+        * `INVENTORY_ANALYSIS` - Inventory Analysis
+        * `SUPPLY_GAP_PRIORITIZATION` - Supply Gap Prioritization
+        * `VACCINATION_DEMAND_SUMMARY` - Vaccination Demand Summary
+    AnalyzeInventoryRequestRequest:
+      type: object
+      properties:
+        facility:
+          type: integer
+          nullable: true
+        horizon_days:
+          type: integer
+          maximum: 180
+          minimum: 1
+          default: 30
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        actor:
+          type: integer
+          readOnly: true
+          nullable: true
+        actor_username:
+          type: string
+          readOnly: true
+        actor_role:
+          type: string
+          readOnly: true
+        actor_facility_name:
+          type: string
+          readOnly: true
+        action:
+          type: string
+          readOnly: true
+        entity_type:
+          type: string
+          readOnly: true
+        entity_id:
+          type: string
+          readOnly: true
+        metadata:
+          readOnly: true
+        ip_address:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - action
+      - actor
+      - actor_facility_name
+      - actor_role
+      - actor_username
+      - created_at
+      - entity_id
+      - entity_type
+      - id
+      - ip_address
+      - metadata
+    CategoryEnum:
+      enum:
+      - MEDICINE
+      - VACCINE
+      type: string
+      description: |-
+        * `MEDICINE` - Medicine
+        * `VACCINE` - Vaccine
+    ConditionEnum:
+      enum:
+      - OPERATIONAL
+      - NEEDS_MAINTENANCE
+      - OUT_OF_SERVICE
+      type: string
+      description: |-
+        * `OPERATIONAL` - Operational
+        * `NEEDS_MAINTENANCE` - Needs Maintenance
+        * `OUT_OF_SERVICE` - Out of Service
+    ContactOutcomeEnum:
+      enum:
+      - REACHED
+      - NO_ANSWER
+      - RESCHEDULED
+      - REFERRED_FOR_REVIEW
+      type: string
+      description: |-
+        * `REACHED` - Reached
+        * `NO_ANSWER` - No Answer
+        * `RESCHEDULED` - Rescheduled
+        * `REFERRED_FOR_REVIEW` - Referred for Review
+    DeliveryCoordination:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        coordinator_username:
+          type: string
+          readOnly: true
+        transfer_request_id:
+          type: integer
+          readOnly: true
+        transport_method:
+          type: string
+          maxLength: 64
+        transport_provider:
+          type: string
+          maxLength: 128
+        contact_person_name:
+          type: string
+          maxLength: 128
+        contact_phone:
+          type: string
+          maxLength: 32
+        transport_payer:
+          $ref: '#/components/schemas/TransportPayerEnum'
+        estimated_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+        currency:
+          type: string
+          maxLength: 8
+        agreed_pickup_at:
+          type: string
+          format: date-time
+          nullable: true
+        expected_arrival_at:
+          type: string
+          format: date-time
+          nullable: true
+        phone_coordination_status:
+          $ref: '#/components/schemas/PhoneCoordinationStatusEnum'
+        last_contacted_at:
+          type: string
+          format: date-time
+          nullable: true
+        delivery_status:
+          $ref: '#/components/schemas/DeliveryStatusEnum'
+        receipt_confirmed_at:
+          type: string
+          format: date-time
+          nullable: true
+        quantity_received:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        condition_on_receipt:
+          type: string
+          maxLength: 32
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        transfer_request:
+          type: integer
+          readOnly: true
+        coordinator:
+          type: integer
+          readOnly: true
+          nullable: true
+        receipt_confirmed_by:
+          type: integer
+          nullable: true
+      required:
+      - coordinator
+      - coordinator_username
+      - created_at
+      - id
+      - transfer_request
+      - transfer_request_id
+      - updated_at
+    DeliveryCoordinationCreate:
+      type: object
+      properties:
+        transport_method:
+          type: string
+          maxLength: 64
+        transport_provider:
+          type: string
+          maxLength: 128
+        contact_person_name:
+          type: string
+          maxLength: 128
+        contact_phone:
+          type: string
+          maxLength: 32
+        transport_payer:
+          $ref: '#/components/schemas/TransportPayerEnum'
+        estimated_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+        currency:
+          type: string
+          maxLength: 8
+        agreed_pickup_at:
+          type: string
+          format: date-time
+          nullable: true
+        expected_arrival_at:
+          type: string
+          format: date-time
+          nullable: true
+        phone_coordination_status:
+          $ref: '#/components/schemas/PhoneCoordinationStatusEnum'
+        delivery_status:
+          $ref: '#/components/schemas/DeliveryStatusEnum'
+        notes:
+          type: string
+    DeliveryCoordinationCreateRequest:
+      type: object
+      properties:
+        transport_method:
+          type: string
+          maxLength: 64
+        transport_provider:
+          type: string
+          maxLength: 128
+        contact_person_name:
+          type: string
+          maxLength: 128
+        contact_phone:
+          type: string
+          maxLength: 32
+        transport_payer:
+          $ref: '#/components/schemas/TransportPayerEnum'
+        estimated_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+        currency:
+          type: string
+          minLength: 1
+          maxLength: 8
+        agreed_pickup_at:
+          type: string
+          format: date-time
+          nullable: true
+        expected_arrival_at:
+          type: string
+          format: date-time
+          nullable: true
+        phone_coordination_status:
+          $ref: '#/components/schemas/PhoneCoordinationStatusEnum'
+        delivery_status:
+          $ref: '#/components/schemas/DeliveryStatusEnum'
+        notes:
+          type: string
+    DeliveryStatusEnum:
+      enum:
+      - NOT_ARRANGED
+      - ARRANGED_BY_PHONE
+      - DISPATCHED
+      - RECEIVED
+      - FAILED
+      - DISCREPANCY
+      type: string
+      description: |-
+        * `NOT_ARRANGED` - Not Arranged
+        * `ARRANGED_BY_PHONE` - Arranged by Phone
+        * `DISPATCHED` - Dispatched
+        * `RECEIVED` - Received
+        * `FAILED` - Failed
+        * `DISCREPANCY` - Discrepancy
+    DirectionEnum:
+      enum:
+      - IN
+      - OUT
+      type: string
+      description: |-
+        * `IN` - In
+        * `OUT` - Out
+    Equipment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        facility:
+          type: integer
+        facility_name:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        category:
+          type: string
+          maxLength: 64
+        asset_identifier:
+          type: string
+          maxLength: 64
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        condition:
+          $ref: '#/components/schemas/ConditionEnum'
+        condition_display:
+          type: string
+          readOnly: true
+        notes:
+          type: string
+        last_checked_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        created_by_username:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - condition_display
+      - created_at
+      - created_by
+      - created_by_username
+      - facility
+      - facility_name
+      - id
+      - name
+      - updated_at
+    EquipmentRequest:
+      type: object
+      properties:
+        facility:
+          type: integer
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        category:
+          type: string
+          maxLength: 64
+        asset_identifier:
+          type: string
+          maxLength: 64
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        condition:
+          $ref: '#/components/schemas/ConditionEnum'
+        notes:
+          type: string
+        last_checked_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - facility
+      - name
+    EquipmentUpdate:
+      type: object
+      description: Facility cannot be changed after creation.
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        category:
+          type: string
+          maxLength: 64
+        asset_identifier:
+          type: string
+          maxLength: 64
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        condition:
+          $ref: '#/components/schemas/ConditionEnum'
+        notes:
+          type: string
+        last_checked_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - name
+    EquipmentUpdateRequest:
+      type: object
+      description: Facility cannot be changed after creation.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        category:
+          type: string
+          maxLength: 64
+        asset_identifier:
+          type: string
+          maxLength: 64
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        condition:
+          $ref: '#/components/schemas/ConditionEnum'
+        notes:
+          type: string
+        last_checked_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - name
+    Facility:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        submitted_by_username:
+          type: string
+          readOnly: true
+        reviewed_by_username:
+          type: string
+          readOnly: true
+        facility_type_display:
+          type: string
+          readOnly: true
+        status_display:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        facility_type:
+          $ref: '#/components/schemas/FacilityTypeEnum'
+        registration_number:
+          type: string
+          nullable: true
+          maxLength: 64
+        region:
+          type: string
+          maxLength: 64
+        zone:
+          type: string
+          maxLength: 64
+        woreda:
+          type: string
+          maxLength: 64
+        kebele:
+          type: string
+          maxLength: 64
+        town:
+          type: string
+          maxLength: 64
+        address:
+          type: string
+        landmark:
+          type: string
+          maxLength: 255
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        contact_phone:
+          type: string
+          maxLength: 32
+        contact_email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        storage_capacity_notes:
+          type: string
+        has_cold_chain:
+          type: boolean
+        cold_chain_notes:
+          type: string
+        provides_vaccination_services:
+          type: boolean
+        status:
+          allOf:
+          - $ref: '#/components/schemas/FacilityStatusEnum'
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        review_note:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        submitted_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        reviewed_by:
+          type: integer
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - facility_type
+      - facility_type_display
+      - id
+      - is_active
+      - name
+      - region
+      - review_note
+      - reviewed_at
+      - reviewed_by
+      - reviewed_by_username
+      - status
+      - status_display
+      - submitted_by
+      - submitted_by_username
+      - updated_at
+    FacilityApplicationCreate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        facility_type:
+          $ref: '#/components/schemas/FacilityTypeEnum'
+        registration_number:
+          type: string
+          nullable: true
+          maxLength: 64
+        region:
+          type: string
+          maxLength: 64
+        zone:
+          type: string
+          maxLength: 64
+        woreda:
+          type: string
+          maxLength: 64
+        kebele:
+          type: string
+          maxLength: 64
+        town:
+          type: string
+          maxLength: 64
+        address:
+          type: string
+        landmark:
+          type: string
+          maxLength: 255
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        contact_phone:
+          type: string
+          maxLength: 32
+        contact_email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        storage_capacity_notes:
+          type: string
+        has_cold_chain:
+          type: boolean
+        cold_chain_notes:
+          type: string
+        provides_vaccination_services:
+          type: boolean
+      required:
+      - facility_type
+      - name
+      - region
+    FacilityApplicationCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        facility_type:
+          $ref: '#/components/schemas/FacilityTypeEnum'
+        registration_number:
+          type: string
+          nullable: true
+          maxLength: 64
+        region:
+          type: string
+          minLength: 1
+          maxLength: 64
+        zone:
+          type: string
+          maxLength: 64
+        woreda:
+          type: string
+          maxLength: 64
+        kebele:
+          type: string
+          maxLength: 64
+        town:
+          type: string
+          maxLength: 64
+        address:
+          type: string
+        landmark:
+          type: string
+          maxLength: 255
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        contact_phone:
+          type: string
+          maxLength: 32
+        contact_email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        storage_capacity_notes:
+          type: string
+        has_cold_chain:
+          type: boolean
+        cold_chain_notes:
+          type: string
+        provides_vaccination_services:
+          type: boolean
+      required:
+      - facility_type
+      - name
+      - region
+    FacilityRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        facility_type:
+          $ref: '#/components/schemas/FacilityTypeEnum'
+        registration_number:
+          type: string
+          nullable: true
+          maxLength: 64
+        region:
+          type: string
+          minLength: 1
+          maxLength: 64
+        zone:
+          type: string
+          maxLength: 64
+        woreda:
+          type: string
+          maxLength: 64
+        kebele:
+          type: string
+          maxLength: 64
+        town:
+          type: string
+          maxLength: 64
+        address:
+          type: string
+        landmark:
+          type: string
+          maxLength: 255
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        contact_phone:
+          type: string
+          maxLength: 32
+        contact_email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        storage_capacity_notes:
+          type: string
+        has_cold_chain:
+          type: boolean
+        cold_chain_notes:
+          type: string
+        provides_vaccination_services:
+          type: boolean
+      required:
+      - facility_type
+      - name
+      - region
+    FacilityStatusEnum:
+      enum:
+      - PENDING
+      - APPROVED
+      - REJECTED
+      - SUSPENDED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `APPROVED` - Approved
+        * `REJECTED` - Rejected
+        * `SUSPENDED` - Suspended
+    FacilityTypeEnum:
+      enum:
+      - CLINIC
+      - HOSPITAL
+      - HEALTH_CENTER
+      - PHARMACY
+      - OTHER
+      type: string
+      description: |-
+        * `CLINIC` - Clinic
+        * `HOSPITAL` - Hospital
+        * `HEALTH_CENTER` - Health Center
+        * `PHARMACY` - Pharmacy
+        * `OTHER` - Other
+    FacilityUpdate:
+      type: object
+      description: |-
+        Used by facility managers / admins to edit an approved facility's operational profile.
+        facility_type, registration_number, and status are intentionally not editable here.
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        address:
+          type: string
+        landmark:
+          type: string
+          maxLength: 255
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        contact_phone:
+          type: string
+          maxLength: 32
+        contact_email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        storage_capacity_notes:
+          type: string
+        has_cold_chain:
+          type: boolean
+        cold_chain_notes:
+          type: string
+      required:
+      - name
+    FacilityUpdateRequest:
+      type: object
+      description: |-
+        Used by facility managers / admins to edit an approved facility's operational profile.
+        facility_type, registration_number, and status are intentionally not editable here.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        address:
+          type: string
+        landmark:
+          type: string
+          maxLength: 255
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        contact_phone:
+          type: string
+          maxLength: 32
+        contact_email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        storage_capacity_notes:
+          type: string
+        has_cold_chain:
+          type: boolean
+        cold_chain_notes:
+          type: string
+      required:
+      - name
+    MedBridgeTokenObtainPairRequest:
+      type: object
+      description: Adds role + facility_id into the JWT so clients avoid an extra
+        call.
+      properties:
+        username:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - password
+      - username
+    MovementTypeEnum:
+      enum:
+      - RECEIPT
+      - CONSUMPTION
+      - VACCINATION_ADMINISTRATION
+      - TRANSFER_OUT
+      - TRANSFER_IN
+      - WASTAGE
+      - ADJUSTMENT
+      - RETURN
+      type: string
+      description: |-
+        * `RECEIPT` - Receipt
+        * `CONSUMPTION` - Consumption
+        * `VACCINATION_ADMINISTRATION` - Vaccination Administration
+        * `TRANSFER_OUT` - Transfer Out
+        * `TRANSFER_IN` - Transfer In
+        * `WASTAGE` - Wastage
+        * `ADJUSTMENT` - Adjustment
+        * `RETURN` - Return
+    PaginatedAIRecommendationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AIRecommendation'
+    PaginatedAuditLogList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLog'
+    PaginatedDeliveryCoordinationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeliveryCoordination'
+    PaginatedEquipmentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Equipment'
+    PaginatedFacilityList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Facility'
+    PaginatedPatientList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Patient'
+    PaginatedProductList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+    PaginatedStockBatchList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockBatch'
+    PaginatedStockMovementList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockMovement'
+    PaginatedSupplyGapReportList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplyGapReport'
+    PaginatedTransferRequestList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransferRequest'
+    PaginatedUserList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    PaginatedVaccinationRecordList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/VaccinationRecord'
+    PaginatedVaccineFollowUpList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/VaccineFollowUp'
+    PaginatedVaccineScheduleList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/VaccineSchedule'
+    PatchedEquipmentUpdateRequest:
+      type: object
+      description: Facility cannot be changed after creation.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        category:
+          type: string
+          maxLength: 64
+        asset_identifier:
+          type: string
+          maxLength: 64
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        condition:
+          $ref: '#/components/schemas/ConditionEnum'
+        notes:
+          type: string
+        last_checked_at:
+          type: string
+          format: date-time
+          nullable: true
+    PatchedFacilityUpdateRequest:
+      type: object
+      description: |-
+        Used by facility managers / admins to edit an approved facility's operational profile.
+        facility_type, registration_number, and status are intentionally not editable here.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        address:
+          type: string
+        landmark:
+          type: string
+          maxLength: 255
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        contact_phone:
+          type: string
+          maxLength: 32
+        contact_email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        storage_capacity_notes:
+          type: string
+        has_cold_chain:
+          type: boolean
+        cold_chain_notes:
+          type: string
+    PatchedPatientUpdateRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        guardian_name:
+          type: string
+          maxLength: 255
+        guardian_phone:
+          type: string
+          maxLength: 32
+        patient_phone:
+          type: string
+          maxLength: 32
+        address_area:
+          type: string
+          maxLength: 255
+        consent_given:
+          type: boolean
+        consent_date:
+          type: string
+          format: date
+          nullable: true
+        active:
+          type: boolean
+    PatchedProductRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        generic_name:
+          type: string
+          maxLength: 255
+        strength:
+          type: string
+          maxLength: 64
+        dosage_form:
+          type: string
+          maxLength: 64
+        unit_of_measure:
+          type: string
+          minLength: 1
+          maxLength: 32
+        description:
+          type: string
+        requires_cold_chain:
+          type: boolean
+        storage_min_temperature:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        storage_max_temperature:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        active:
+          type: boolean
+    PatchedStockBatchUpdateRequest:
+      type: object
+      description: Only status and free-text reference — never quantities.
+      properties:
+        storage_status:
+          $ref: '#/components/schemas/StorageStatusEnum'
+        source_reference:
+          type: string
+          maxLength: 255
+    PatchedVaccineScheduleRequest:
+      type: object
+      properties:
+        dose_number:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        recommended_age_days:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        recommended_age_label:
+          type: string
+          maxLength: 64
+        minimum_interval_days:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        effective_from:
+          type: string
+          format: date
+        effective_to:
+          type: string
+          format: date
+          nullable: true
+        source_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        source_version:
+          type: string
+          maxLength: 64
+        active:
+          type: boolean
+        vaccine_product:
+          type: integer
+    Patient:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        facility_name:
+          type: string
+          readOnly: true
+        sex_display:
+          type: string
+          readOnly: true
+        patient_number:
+          type: string
+          maxLength: 32
+        full_name:
+          type: string
+          maxLength: 255
+        date_of_birth:
+          type: string
+          format: date
+        sex:
+          $ref: '#/components/schemas/SexEnum'
+        guardian_name:
+          type: string
+          maxLength: 255
+        guardian_phone:
+          type: string
+          maxLength: 32
+        patient_phone:
+          type: string
+          maxLength: 32
+        address_area:
+          type: string
+          maxLength: 255
+        consent_given:
+          type: boolean
+        consent_date:
+          type: string
+          format: date
+          nullable: true
+        active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        facility:
+          type: integer
+          readOnly: true
+        created_by:
+          type: integer
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - created_by
+      - date_of_birth
+      - facility
+      - facility_name
+      - full_name
+      - id
+      - patient_number
+      - sex_display
+      - updated_at
+    PatientCreate:
+      type: object
+      properties:
+        patient_number:
+          type: string
+          maxLength: 32
+        full_name:
+          type: string
+          maxLength: 255
+        date_of_birth:
+          type: string
+          format: date
+        sex:
+          $ref: '#/components/schemas/SexEnum'
+        guardian_name:
+          type: string
+          maxLength: 255
+        guardian_phone:
+          type: string
+          maxLength: 32
+        patient_phone:
+          type: string
+          maxLength: 32
+        address_area:
+          type: string
+          maxLength: 255
+        consent_given:
+          type: boolean
+        consent_date:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - date_of_birth
+      - full_name
+    PatientCreateRequest:
+      type: object
+      properties:
+        patient_number:
+          type: string
+          maxLength: 32
+        full_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        date_of_birth:
+          type: string
+          format: date
+        sex:
+          $ref: '#/components/schemas/SexEnum'
+        guardian_name:
+          type: string
+          maxLength: 255
+        guardian_phone:
+          type: string
+          maxLength: 32
+        patient_phone:
+          type: string
+          maxLength: 32
+        address_area:
+          type: string
+          maxLength: 255
+        consent_given:
+          type: boolean
+        consent_date:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - date_of_birth
+      - full_name
+    PatientUpdate:
+      type: object
+      properties:
+        full_name:
+          type: string
+          maxLength: 255
+        guardian_name:
+          type: string
+          maxLength: 255
+        guardian_phone:
+          type: string
+          maxLength: 32
+        patient_phone:
+          type: string
+          maxLength: 32
+        address_area:
+          type: string
+          maxLength: 255
+        consent_given:
+          type: boolean
+        consent_date:
+          type: string
+          format: date
+          nullable: true
+        active:
+          type: boolean
+      required:
+      - full_name
+    PhoneCoordinationStatusEnum:
+      enum:
+      - PENDING
+      - CONFIRMED
+      - CANCELLED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `CONFIRMED` - Confirmed
+        * `CANCELLED` - Cancelled
+    PrioritizeGapsRequestRequest:
+      type: object
+      properties:
+        horizon_days:
+          type: integer
+          maximum: 180
+          minimum: 1
+          default: 30
+    Priority1b7Enum:
+      enum:
+      - CRITICAL
+      - HIGH
+      - MEDIUM
+      - LOW
+      type: string
+      description: |-
+        * `CRITICAL` - Critical
+        * `HIGH` - High
+        * `MEDIUM` - Medium
+        * `LOW` - Low
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        category_display:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        generic_name:
+          type: string
+          maxLength: 255
+        strength:
+          type: string
+          maxLength: 64
+        dosage_form:
+          type: string
+          maxLength: 64
+        unit_of_measure:
+          type: string
+          maxLength: 32
+        description:
+          type: string
+        requires_cold_chain:
+          type: boolean
+        storage_min_temperature:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        storage_max_temperature:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - category
+      - category_display
+      - created_at
+      - id
+      - name
+      - updated_at
+    ProductRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        generic_name:
+          type: string
+          maxLength: 255
+        strength:
+          type: string
+          maxLength: 64
+        dosage_form:
+          type: string
+          maxLength: 64
+        unit_of_measure:
+          type: string
+          minLength: 1
+          maxLength: 32
+        description:
+          type: string
+        requires_cold_chain:
+          type: boolean
+        storage_min_temperature:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        storage_max_temperature:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        active:
+          type: boolean
+      required:
+      - category
+      - name
+    RoleEnum:
+      enum:
+      - SYSTEM_ADMIN
+      - CENTRAL_COORDINATOR
+      - FACILITY_MANAGER
+      - PHARMACIST
+      - INVENTORY_STAFF
+      - PHARMACY_STAFF
+      - HEALTH_WORKER
+      type: string
+      description: |-
+        * `SYSTEM_ADMIN` - System Admin
+        * `CENTRAL_COORDINATOR` - Central Coordinator
+        * `FACILITY_MANAGER` - Facility Manager
+        * `PHARMACIST` - Pharmacist
+        * `INVENTORY_STAFF` - Inventory Staff
+        * `PHARMACY_STAFF` - Pharmacy Staff
+        * `HEALTH_WORKER` - Health Worker
+    SexEnum:
+      enum:
+      - MALE
+      - FEMALE
+      - OTHER
+      - UNKNOWN
+      type: string
+      description: |-
+        * `MALE` - Male
+        * `FEMALE` - Female
+        * `OTHER` - Other
+        * `UNKNOWN` - Unknown
+    Status436Enum:
+      enum:
+      - PENDING_REVIEW
+      - APPROVED
+      - REJECTED
+      - FAILED
+      - INVALID
+      type: string
+      description: |-
+        * `PENDING_REVIEW` - Pending Review
+        * `APPROVED` - Approved
+        * `REJECTED` - Rejected
+        * `FAILED` - Failed
+        * `INVALID` - Invalid
+    StockBatch:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        facility:
+          type: integer
+          readOnly: true
+        facility_name:
+          type: string
+          readOnly: true
+        product:
+          type: integer
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        product_category:
+          type: string
+          readOnly: true
+        batch_number:
+          type: string
+          readOnly: true
+        expiry_date:
+          type: string
+          format: date
+          readOnly: true
+        quantity_received:
+          type: integer
+          readOnly: true
+        quantity_available:
+          type: integer
+          readOnly: true
+        quantity_reserved:
+          type: integer
+          readOnly: true
+        storage_status:
+          $ref: '#/components/schemas/StorageStatusEnum'
+        storage_status_display:
+          type: string
+          readOnly: true
+        received_at:
+          type: string
+          format: date-time
+          readOnly: true
+        source_reference:
+          type: string
+          maxLength: 255
+        is_expired:
+          type: boolean
+          readOnly: true
+        created_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - batch_number
+      - created_at
+      - created_by
+      - expiry_date
+      - facility
+      - facility_name
+      - id
+      - is_expired
+      - product
+      - product_category
+      - product_name
+      - quantity_available
+      - quantity_received
+      - quantity_reserved
+      - received_at
+      - storage_status_display
+      - updated_at
+    StockBatchUpdate:
+      type: object
+      description: Only status and free-text reference — never quantities.
+      properties:
+        storage_status:
+          $ref: '#/components/schemas/StorageStatusEnum'
+        source_reference:
+          type: string
+          maxLength: 255
+    StockMovement:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        batch:
+          type: integer
+          readOnly: true
+        batch_number:
+          type: string
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        product_category:
+          type: string
+          readOnly: true
+        facility_id:
+          type: integer
+          readOnly: true
+        facility_name:
+          type: string
+          readOnly: true
+        movement_type:
+          allOf:
+          - $ref: '#/components/schemas/MovementTypeEnum'
+          readOnly: true
+        movement_type_display:
+          type: string
+          readOnly: true
+        direction:
+          allOf:
+          - $ref: '#/components/schemas/DirectionEnum'
+          readOnly: true
+        quantity:
+          type: integer
+          readOnly: true
+        reference_type:
+          type: string
+          readOnly: true
+        reference_id:
+          type: string
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        performed_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        performed_by_username:
+          type: string
+          readOnly: true
+        occurred_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        idempotency_key:
+          type: string
+          readOnly: true
+          nullable: true
+      required:
+      - batch
+      - batch_number
+      - created_at
+      - direction
+      - facility_id
+      - facility_name
+      - id
+      - idempotency_key
+      - movement_type
+      - movement_type_display
+      - occurred_at
+      - performed_by
+      - performed_by_username
+      - product_category
+      - product_name
+      - quantity
+      - reason
+      - reference_id
+      - reference_type
+    StorageStatusEnum:
+      enum:
+      - OK
+      - QUARANTINED
+      - TEMPERATURE_EXCURSION
+      - DAMAGED
+      - EXPIRED
+      type: string
+      description: |-
+        * `OK` - OK
+        * `QUARANTINED` - Quarantined
+        * `TEMPERATURE_EXCURSION` - Temperature Excursion
+        * `DAMAGED` - Damaged
+        * `EXPIRED` - Expired
+    SummarizeVaccinationRequestRequest:
+      type: object
+      properties:
+        facility:
+          type: integer
+          nullable: true
+        horizon_days:
+          type: integer
+          maximum: 180
+          minimum: 7
+          default: 30
+    SupplyGapReport:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        facility_name:
+          type: string
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        product_category:
+          type: string
+          readOnly: true
+        assigned_to_username:
+          type: string
+          readOnly: true
+        status_display:
+          type: string
+          readOnly: true
+        priority_display:
+          type: string
+          readOnly: true
+        reporting_horizon_start:
+          type: string
+          format: date
+          readOnly: true
+        reporting_horizon_end:
+          type: string
+          format: date
+          readOnly: true
+        projected_demand:
+          type: integer
+          readOnly: true
+        usable_stock:
+          type: integer
+          readOnly: true
+        reliable_incoming_quantity:
+          type: integer
+          readOnly: true
+        uncovered_quantity:
+          type: integer
+          readOnly: true
+        priority:
+          allOf:
+          - $ref: '#/components/schemas/Priority1b7Enum'
+          readOnly: true
+        reason_summary:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/SupplyGapReportStatusEnum'
+          readOnly: true
+          default: OPEN
+        resolution_notes:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        resolved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        facility:
+          type: integer
+          readOnly: true
+        product:
+          type: integer
+          readOnly: true
+        assigned_to:
+          type: integer
+          readOnly: true
+          nullable: true
+      required:
+      - assigned_to
+      - assigned_to_username
+      - created_at
+      - facility
+      - facility_name
+      - id
+      - priority
+      - priority_display
+      - product
+      - product_category
+      - product_name
+      - projected_demand
+      - reason_summary
+      - reliable_incoming_quantity
+      - reporting_horizon_end
+      - reporting_horizon_start
+      - resolution_notes
+      - resolved_at
+      - status
+      - status_display
+      - uncovered_quantity
+      - updated_at
+      - usable_stock
+    SupplyGapReportStatusEnum:
+      enum:
+      - OPEN
+      - UNDER_REVIEW
+      - ASSIGNED
+      - ACTION_PLANNED
+      - ESCALATED
+      - RESOLVED
+      - CLOSED
+      type: string
+      description: |-
+        * `OPEN` - Open
+        * `UNDER_REVIEW` - Under Review
+        * `ASSIGNED` - Assigned
+        * `ACTION_PLANNED` - Action Planned
+        * `ESCALATED` - Escalated
+        * `RESOLVED` - Resolved
+        * `CLOSED` - Closed
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    TokenVerifyRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - token
+    TransferRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        source_facility_name:
+          type: string
+          readOnly: true
+        destination_facility_name:
+          type: string
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        source_batch_number:
+          type: string
+          readOnly: true
+        source_batch_expiry:
+          type: string
+          format: date
+          readOnly: true
+        requested_by_username:
+          type: string
+          readOnly: true
+        approved_by_username:
+          type: string
+          readOnly: true
+        status_display:
+          type: string
+          readOnly: true
+        priority_display:
+          type: string
+          readOnly: true
+        quantity_requested:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        quantity_approved:
+          type: integer
+          readOnly: true
+        quantity_received:
+          type: integer
+          readOnly: true
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/TransferStatusEnum'
+          readOnly: true
+        priority:
+          $ref: '#/components/schemas/Priority1b7Enum'
+        approved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        rejection_reason:
+          type: string
+          readOnly: true
+        received_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        condition_on_receipt:
+          type: string
+          readOnly: true
+        expected_dispatch_at:
+          type: string
+          format: date-time
+          nullable: true
+        expected_arrival_at:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        source_facility:
+          type: integer
+        destination_facility:
+          type: integer
+        product:
+          type: integer
+        source_batch:
+          type: integer
+        requested_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        approved_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        received_by:
+          type: integer
+          readOnly: true
+          nullable: true
+      required:
+      - approved_at
+      - approved_by
+      - approved_by_username
+      - condition_on_receipt
+      - created_at
+      - destination_facility
+      - destination_facility_name
+      - id
+      - priority_display
+      - product
+      - product_name
+      - quantity_approved
+      - quantity_received
+      - quantity_requested
+      - received_at
+      - received_by
+      - rejection_reason
+      - requested_by
+      - requested_by_username
+      - source_batch
+      - source_batch_expiry
+      - source_batch_number
+      - source_facility
+      - source_facility_name
+      - status
+      - status_display
+      - updated_at
+    TransferRequestCreate:
+      type: object
+      properties:
+        source_facility:
+          type: integer
+        destination_facility:
+          type: integer
+        product:
+          type: integer
+        source_batch:
+          type: integer
+        quantity_requested:
+          type: integer
+          minimum: 1
+        priority:
+          allOf:
+          - $ref: '#/components/schemas/TransferRequestCreatePriorityEnum'
+          default: MEDIUM
+        expected_dispatch_at:
+          type: string
+          format: date-time
+          nullable: true
+        expected_arrival_at:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          default: ''
+      required:
+      - destination_facility
+      - product
+      - quantity_requested
+      - source_batch
+      - source_facility
+    TransferRequestCreatePriorityEnum:
+      enum:
+      - CRITICAL
+      - HIGH
+      - MEDIUM
+      - LOW
+      type: string
+      description: |-
+        * `CRITICAL` - CRITICAL
+        * `HIGH` - HIGH
+        * `MEDIUM` - MEDIUM
+        * `LOW` - LOW
+    TransferRequestCreateRequest:
+      type: object
+      properties:
+        source_facility:
+          type: integer
+        destination_facility:
+          type: integer
+        product:
+          type: integer
+        source_batch:
+          type: integer
+        quantity_requested:
+          type: integer
+          minimum: 1
+        priority:
+          allOf:
+          - $ref: '#/components/schemas/TransferRequestCreatePriorityEnum'
+          default: MEDIUM
+        expected_dispatch_at:
+          type: string
+          format: date-time
+          nullable: true
+        expected_arrival_at:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          default: ''
+      required:
+      - destination_facility
+      - product
+      - quantity_requested
+      - source_batch
+      - source_facility
+    TransferRequestRequest:
+      type: object
+      properties:
+        quantity_requested:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        priority:
+          $ref: '#/components/schemas/Priority1b7Enum'
+        expected_dispatch_at:
+          type: string
+          format: date-time
+          nullable: true
+        expected_arrival_at:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+        source_facility:
+          type: integer
+        destination_facility:
+          type: integer
+        product:
+          type: integer
+        source_batch:
+          type: integer
+      required:
+      - destination_facility
+      - product
+      - quantity_requested
+      - source_batch
+      - source_facility
+    TransferStatusEnum:
+      enum:
+      - DRAFT
+      - REQUESTED
+      - UNDER_REVIEW
+      - APPROVED
+      - REJECTED
+      - DISPATCHED
+      - IN_TRANSIT
+      - RECEIVED
+      - CANCELLED
+      - FAILED
+      type: string
+      description: |-
+        * `DRAFT` - Draft
+        * `REQUESTED` - Requested
+        * `UNDER_REVIEW` - Under Review
+        * `APPROVED` - Approved
+        * `REJECTED` - Rejected
+        * `DISPATCHED` - Dispatched
+        * `IN_TRANSIT` - In Transit
+        * `RECEIVED` - Received
+        * `CANCELLED` - Cancelled
+        * `FAILED` - Failed
+    TransportPayerEnum:
+      enum:
+      - CENTRAL
+      - SENDER
+      - RECEIVER
+      - PARTNER
+      - UNDECIDED
+      type: string
+      description: |-
+        * `CENTRAL` - Central
+        * `SENDER` - Sender
+        * `RECEIVER` - Receiver
+        * `PARTNER` - Partner
+        * `UNDECIDED` - Undecided
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        phone:
+          type: string
+          maxLength: 32
+        facility:
+          type: integer
+          nullable: true
+        facility_name:
+          type: string
+          readOnly: true
+        facility_status:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - date_joined
+      - email
+      - facility_name
+      - facility_status
+      - id
+      - username
+    UserCreate:
+      type: object
+      description: |-
+        Used by facility managers / system admins to create facility-scoped users.
+        Never exposes password in the response.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        phone:
+          type: string
+          maxLength: 32
+      required:
+      - email
+      - id
+      - username
+    UserCreateRequest:
+      type: object
+      description: |-
+        Used by facility managers / system admins to create facility-scoped users.
+        Never exposes password in the response.
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        phone:
+          type: string
+          maxLength: 32
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+      required:
+      - email
+      - password
+      - username
+    UserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        phone:
+          type: string
+          maxLength: 32
+        facility:
+          type: integer
+          nullable: true
+        is_active:
+          type: boolean
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+      required:
+      - email
+      - username
+    VaccinationRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient_number:
+          type: string
+          readOnly: true
+        patient_name:
+          type: string
+          readOnly: true
+        vaccine_product_name:
+          type: string
+          readOnly: true
+        batch_number:
+          type: string
+          readOnly: true
+        facility_name:
+          type: string
+          readOnly: true
+        recorded_by_username:
+          type: string
+          readOnly: true
+        schedule_id:
+          type: integer
+          readOnly: true
+        dose_number:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        administered_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        patient:
+          type: integer
+        vaccine_product:
+          type: integer
+        schedule:
+          type: integer
+          readOnly: true
+          nullable: true
+        facility:
+          type: integer
+          readOnly: true
+        batch:
+          type: integer
+        recorded_by:
+          type: integer
+          readOnly: true
+          nullable: true
+      required:
+      - administered_at
+      - batch
+      - batch_number
+      - created_at
+      - dose_number
+      - facility
+      - facility_name
+      - id
+      - patient
+      - patient_name
+      - patient_number
+      - recorded_by
+      - recorded_by_username
+      - schedule
+      - schedule_id
+      - vaccine_product
+      - vaccine_product_name
+    VaccinationRecordCreate:
+      type: object
+      properties:
+        patient:
+          type: integer
+        vaccine_product:
+          type: integer
+        dose_number:
+          type: integer
+          minimum: 1
+        administered_at:
+          type: string
+          format: date-time
+        batch:
+          type: integer
+        notes:
+          type: string
+          default: ''
+      required:
+      - administered_at
+      - batch
+      - dose_number
+      - patient
+      - vaccine_product
+    VaccinationRecordCreateRequest:
+      type: object
+      properties:
+        patient:
+          type: integer
+        vaccine_product:
+          type: integer
+        dose_number:
+          type: integer
+          minimum: 1
+        administered_at:
+          type: string
+          format: date-time
+        batch:
+          type: integer
+        notes:
+          type: string
+          default: ''
+      required:
+      - administered_at
+      - batch
+      - dose_number
+      - patient
+      - vaccine_product
+    VaccineFollowUp:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient_number:
+          type: string
+          readOnly: true
+        patient_name:
+          type: string
+          readOnly: true
+        vaccine_product_name:
+          type: string
+          readOnly: true
+        assigned_to_username:
+          type: string
+          readOnly: true
+        status_display:
+          type: string
+          readOnly: true
+        contact_outcome_display:
+          type: string
+          readOnly: true
+        effective_status:
+          type: string
+          readOnly: true
+        dose_number:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        due_date:
+          type: string
+          format: date
+        status:
+          allOf:
+          - $ref: '#/components/schemas/VaccineFollowUpStatusEnum'
+          readOnly: true
+          default: UPCOMING
+        last_contacted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        contact_outcome:
+          allOf:
+          - $ref: '#/components/schemas/ContactOutcomeEnum'
+          readOnly: true
+        next_action_date:
+          type: string
+          format: date
+          nullable: true
+        review_reason:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        patient:
+          type: integer
+        vaccine_product:
+          type: integer
+        assigned_to:
+          type: integer
+          nullable: true
+      required:
+      - assigned_to_username
+      - contact_outcome
+      - contact_outcome_display
+      - created_at
+      - dose_number
+      - due_date
+      - effective_status
+      - id
+      - last_contacted_at
+      - patient
+      - patient_name
+      - patient_number
+      - review_reason
+      - status
+      - status_display
+      - updated_at
+      - vaccine_product
+      - vaccine_product_name
+    VaccineFollowUpCreate:
+      type: object
+      properties:
+        patient:
+          type: integer
+        vaccine_product:
+          type: integer
+        dose_number:
+          type: integer
+          minimum: 1
+        due_date:
+          type: string
+          format: date
+        assigned_to:
+          type: integer
+          nullable: true
+      required:
+      - dose_number
+      - due_date
+      - patient
+      - vaccine_product
+    VaccineFollowUpCreateRequest:
+      type: object
+      properties:
+        patient:
+          type: integer
+        vaccine_product:
+          type: integer
+        dose_number:
+          type: integer
+          minimum: 1
+        due_date:
+          type: string
+          format: date
+        assigned_to:
+          type: integer
+          nullable: true
+      required:
+      - dose_number
+      - due_date
+      - patient
+      - vaccine_product
+    VaccineFollowUpRequest:
+      type: object
+      properties:
+        dose_number:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        due_date:
+          type: string
+          format: date
+        next_action_date:
+          type: string
+          format: date
+          nullable: true
+        patient:
+          type: integer
+        vaccine_product:
+          type: integer
+        assigned_to:
+          type: integer
+          nullable: true
+      required:
+      - dose_number
+      - due_date
+      - patient
+      - vaccine_product
+    VaccineFollowUpStatusEnum:
+      enum:
+      - UPCOMING
+      - DUE
+      - OVERDUE
+      - COMPLETED
+      - CONTACT_ATTEMPTED
+      - REVIEW_REQUIRED
+      - CANCELLED
+      type: string
+      description: |-
+        * `UPCOMING` - Upcoming
+        * `DUE` - Due
+        * `OVERDUE` - Overdue
+        * `COMPLETED` - Completed
+        * `CONTACT_ATTEMPTED` - Contact Attempted
+        * `REVIEW_REQUIRED` - Review Required
+        * `CANCELLED` - Cancelled
+    VaccineSchedule:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        vaccine_product_name:
+          type: string
+          readOnly: true
+        dose_number:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        recommended_age_days:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        recommended_age_label:
+          type: string
+          maxLength: 64
+        minimum_interval_days:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        effective_from:
+          type: string
+          format: date
+        effective_to:
+          type: string
+          format: date
+          nullable: true
+        source_name:
+          type: string
+          maxLength: 255
+        source_version:
+          type: string
+          maxLength: 64
+        active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        vaccine_product:
+          type: integer
+        approved_by:
+          type: integer
+          readOnly: true
+          nullable: true
+      required:
+      - approved_by
+      - created_at
+      - dose_number
+      - effective_from
+      - id
+      - source_name
+      - updated_at
+      - vaccine_product
+      - vaccine_product_name
+    VaccineScheduleCreate:
+      type: object
+      properties:
+        vaccine_product:
+          type: integer
+        dose_number:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        recommended_age_days:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        recommended_age_label:
+          type: string
+          maxLength: 64
+        minimum_interval_days:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        effective_from:
+          type: string
+          format: date
+        source_name:
+          type: string
+          maxLength: 255
+        source_version:
+          type: string
+          maxLength: 64
+        active:
+          type: boolean
+      required:
+      - dose_number
+      - effective_from
+      - source_name
+      - vaccine_product
+    VaccineScheduleCreateRequest:
+      type: object
+      properties:
+        vaccine_product:
+          type: integer
+        dose_number:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        recommended_age_days:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        recommended_age_label:
+          type: string
+          maxLength: 64
+        minimum_interval_days:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        effective_from:
+          type: string
+          format: date
+        source_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        source_version:
+          type: string
+          maxLength: 64
+        active:
+          type: boolean
+      required:
+      - dose_number
+      - effective_from
+      - source_name
+      - vaccine_product
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+- name: Auth
+  description: JWT authentication and profile.
+- name: Facilities
+  description: Facility applications, approval, lifecycle, users.
+- name: Inventory
+  description: Products, batches, stock ledger, rollups.
+- name: Transfers
+  description: Inter-facility transfer workflow.
+- name: Coordination
+  description: Delivery coordination and supply-gap reports.
+- name: Vaccinations
+  description: Patients, schedules, records, follow-ups.
+- name: AI
+  description: Gemini analysis and human review queue.
+- name: Dashboards
+  description: Facility and central summary views.
+- name: Audit
+  description: Read-only operational audit log.

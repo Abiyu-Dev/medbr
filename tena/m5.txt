@@ -1,0 +1,2826 @@
+# Milestone 5 — Transfers, Delivery Coordination, and Supply Gap Reports
+
+Goal: The operational workflow. A facility can request stock from another facility. Transfers move through a strict state machine — every state transition is atomic, locks the source batch, and produces ledger movements only at dispatch/receipt. Phone-based delivery coordination is documented as a call log. Shortages that can't be resolved by transfers become `SupplyGapReport` records for central escalation.
+
+## Prerequisites — fix two M4 test bugs first
+
+Two tests in **`inventory/tests.py`** from M4 over-consume stock and would fail when you actually ran them. Fix before proceeding, or M5 tests will look like regressions:
+
+```python
+# In ProductSummaryCalcTests.setUp — the initial receipt must exceed the 300 consumed
+# in test_gap_positive_when_demand_exceeds_stock
+_, self.batch, _ = receive_stock(
+    facility=self.facility,
+    product=self.product,
+    batch_number="B1",
+    expiry_date=date.today() + timedelta(days=60),
+    quantity=500,   # was 100
+    performed_by=self.pharm,
+)
+
+# In InventorySummaryEndpointTests.setUp — same, initial receipt must exceed 300
+_, self.batch_a, _ = receive_stock(
+    facility=self.fa,
+    product=self.product,
+    batch_number="BA",
+    expiry_date=date.today() + timedelta(days=60),
+    quantity=1000,  # was 100
+    performed_by=self.pharm_a,
+)
+```
+
+Then `python manage.py test` should be green before you begin M5.
+
+---
+
+## Step 1 — `inventory/models.py` — add `TransferRequest`
+
+Append below `StockMovement`:
+
+```python
+class TransferRequest(models.Model):
+    """
+    A batch-level stock transfer between two facilities.
+    One product / one batch per request (MVP).
+    Dispatch and receipt are the ONLY operations that write stock ledger movements.
+    """
+
+    class Status(models.TextChoices):
+        DRAFT = "DRAFT", "Draft"
+        REQUESTED = "REQUESTED", "Requested"
+        UNDER_REVIEW = "UNDER_REVIEW", "Under Review"
+        APPROVED = "APPROVED", "Approved"
+        REJECTED = "REJECTED", "Rejected"
+        DISPATCHED = "DISPATCHED", "Dispatched"
+        IN_TRANSIT = "IN_TRANSIT", "In Transit"
+        RECEIVED = "RECEIVED", "Received"
+        CANCELLED = "CANCELLED", "Cancelled"
+        FAILED = "FAILED", "Failed"
+
+    class Priority(models.TextChoices):
+        CRITICAL = "CRITICAL", "Critical"
+        HIGH = "HIGH", "High"
+        MEDIUM = "MEDIUM", "Medium"
+        LOW = "LOW", "Low"
+
+    source_facility = models.ForeignKey(
+        "facilities.Facility",
+        on_delete=models.PROTECT,
+        related_name="transfers_out",
+    )
+    destination_facility = models.ForeignKey(
+        "facilities.Facility",
+        on_delete=models.PROTECT,
+        related_name="transfers_in",
+    )
+    product = models.ForeignKey(
+        Product, on_delete=models.PROTECT, related_name="transfers"
+    )
+    source_batch = models.ForeignKey(
+        StockBatch, on_delete=models.PROTECT, related_name="transfers"
+    )
+
+    quantity_requested = models.PositiveIntegerField()
+    quantity_approved = models.PositiveIntegerField(default=0)
+    quantity_received = models.PositiveIntegerField(null=True, blank=True)
+
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.REQUESTED
+    )
+    priority = models.CharField(
+        max_length=16, choices=Priority.choices, default=Priority.MEDIUM
+    )
+
+    requested_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="transfers_requested",
+    )
+    approved_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="transfers_approved",
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.TextField(blank=True)
+
+    received_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="transfers_received",
+    )
+    received_at = models.DateTimeField(null=True, blank=True)
+    condition_on_receipt = models.CharField(max_length=32, blank=True)
+
+    expected_dispatch_at = models.DateTimeField(null=True, blank=True)
+    expected_arrival_at = models.DateTimeField(null=True, blank=True)
+
+    notes = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "destination_facility"]),
+            models.Index(fields=["status", "source_facility"]),
+        ]
+
+    def __str__(self):
+        return (
+            f"Transfer #{self.id}: {self.source_facility_id} -> "
+            f"{self.destination_facility_id} ({self.status})"
+        )
+
+    TRANSITIONS = {
+        Status.DRAFT: {Status.REQUESTED, Status.CANCELLED},
+        Status.REQUESTED: {
+            Status.UNDER_REVIEW,
+            Status.APPROVED,
+            Status.REJECTED,
+            Status.CANCELLED,
+        },
+        Status.UNDER_REVIEW: {Status.APPROVED, Status.REJECTED, Status.CANCELLED},
+        Status.APPROVED: {Status.DISPATCHED, Status.CANCELLED},
+        Status.DISPATCHED: {Status.IN_TRANSIT, Status.RECEIVED, Status.FAILED},
+        Status.IN_TRANSIT: {Status.RECEIVED, Status.FAILED},
+        Status.RECEIVED: set(),
+        Status.REJECTED: set(),
+        Status.CANCELLED: set(),
+        Status.FAILED: set(),
+    }
+
+    def can_transition_to(self, target):
+        return target in self.TRANSITIONS.get(self.status, set())
+```
+
+## Step 2 — `inventory/transfers.py` (new file)
+
+All transfer lifecycle logic. Same locking order everywhere: **transfer first, then batch** (avoids deadlocks).
+
+```python
+from django.db import transaction
+from django.utils import timezone
+
+from .models import StockBatch, StockMovement, TransferRequest
+
+
+class TransferError(Exception):
+    """Raised when a transfer rule is violated. Mapped to HTTP 400."""
+
+
+# ---------------------------------------------------------------------------
+# Creation
+# ---------------------------------------------------------------------------
+
+
+@transaction.atomic
+def create_transfer_request(
+    *,
+    source_facility,
+    destination_facility,
+    product,
+    source_batch,
+    quantity_requested,
+    priority,
+    requested_by,
+    expected_dispatch_at=None,
+    expected_arrival_at=None,
+    notes="",
+):
+    if source_facility.id == destination_facility.id:
+        raise TransferError("Source and destination facilities must differ.")
+    for fac in (source_facility, destination_facility):
+        if fac.status != "APPROVED" or not fac.is_active:
+            raise TransferError(
+                f"Facility '{fac.name}' is not approved and active."
+            )
+
+    batch = StockBatch.objects.select_for_update().get(pk=source_batch.pk)
+    if batch.facility_id != source_facility.id:
+        raise TransferError("Source batch does not belong to the source facility.")
+    if batch.product_id != product.id:
+        raise TransferError("Product does not match the source batch's product.")
+    if not batch.is_usable():
+        raise TransferError(
+            f"Source batch is not usable (status={batch.storage_status}, "
+            f"expiry={batch.expiry_date})."
+        )
+    if quantity_requested <= 0:
+        raise TransferError("quantity_requested must be positive.")
+
+    free = batch.quantity_available - batch.quantity_reserved
+    if quantity_requested > free:
+        raise TransferError(
+            f"Insufficient unreserved stock: only {free} free units in source batch."
+        )
+
+    return TransferRequest.objects.create(
+        source_facility=source_facility,
+        destination_facility=destination_facility,
+        product=product,
+        source_batch=batch,
+        quantity_requested=quantity_requested,
+        priority=priority,
+        requested_by=requested_by,
+        expected_dispatch_at=expected_dispatch_at,
+        expected_arrival_at=expected_arrival_at,
+        notes=notes,
+        status=TransferRequest.Status.REQUESTED,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Review
+# ---------------------------------------------------------------------------
+
+
+@transaction.atomic
+def approve_transfer(*, transfer, approved_by, quantity_approved):
+    locked = TransferRequest.objects.select_for_update().get(pk=transfer.pk)
+    if locked.status not in (
+        TransferRequest.Status.REQUESTED,
+        TransferRequest.Status.UNDER_REVIEW,
+    ):
+        raise TransferError(f"Cannot approve a transfer in status {locked.status}.")
+    if quantity_approved <= 0:
+        raise TransferError("quantity_approved must be positive.")
+    if quantity_approved > locked.quantity_requested:
+        raise TransferError("quantity_approved cannot exceed quantity_requested.")
+
+    batch = StockBatch.objects.select_for_update().get(pk=locked.source_batch_id)
+    if not batch.is_usable():
+        raise TransferError("Source batch is no longer usable.")
+    free = batch.quantity_available - batch.quantity_reserved
+    if quantity_approved > free:
+        raise TransferError(
+            f"Insufficient free stock in source batch: {free} available, "
+            f"{quantity_approved} requested."
+        )
+
+    batch.quantity_reserved += quantity_approved
+    batch.save(update_fields=["quantity_reserved", "updated_at"])
+
+    locked.quantity_approved = quantity_approved
+    locked.status = TransferRequest.Status.APPROVED
+    locked.approved_by = approved_by
+    locked.approved_at = timezone.now()
+    locked.save()
+    return locked
+
+
+@transaction.atomic
+def reject_transfer(*, transfer, reviewed_by, rejection_reason):
+    if not rejection_reason or not rejection_reason.strip():
+        raise TransferError("Rejection reason is required.")
+    locked = TransferRequest.objects.select_for_update().get(pk=transfer.pk)
+    if locked.status not in (
+        TransferRequest.Status.REQUESTED,
+        TransferRequest.Status.UNDER_REVIEW,
+    ):
+        raise TransferError(f"Cannot reject a transfer in status {locked.status}.")
+
+    locked.status = TransferRequest.Status.REJECTED
+    locked.rejection_reason = rejection_reason
+    locked.approved_by = reviewed_by  # reviewer field doubles for rejections
+    locked.approved_at = timezone.now()
+    locked.save()
+    return locked
+
+
+# ---------------------------------------------------------------------------
+# Dispatch
+# ---------------------------------------------------------------------------
+
+
+@transaction.atomic
+def dispatch_transfer(*, transfer, performed_by, notes=""):
+    locked = TransferRequest.objects.select_for_update().get(pk=transfer.pk)
+    if locked.status != TransferRequest.Status.APPROVED:
+        raise TransferError(
+            f"Cannot dispatch a transfer in status {locked.status}."
+        )
+
+    batch = StockBatch.objects.select_for_update().get(pk=locked.source_batch_id)
+    if batch.quantity_available < locked.quantity_approved:
+        raise TransferError(
+            f"Source batch only has {batch.quantity_available} units; "
+            f"{locked.quantity_approved} are committed."
+        )
+
+    batch.quantity_available -= locked.quantity_approved
+    batch.quantity_reserved = max(
+        0, batch.quantity_reserved - locked.quantity_approved
+    )
+    batch.save(update_fields=["quantity_available", "quantity_reserved", "updated_at"])
+
+    StockMovement.objects.create(
+        batch=batch,
+        movement_type=StockMovement.MovementType.TRANSFER_OUT,
+        direction=StockMovement.Direction.OUT,
+        quantity=locked.quantity_approved,
+        reference_type="TransferRequest",
+        reference_id=str(locked.id),
+        reason=notes or "Dispatched transfer",
+        performed_by=performed_by,
+        idempotency_key=f"transfer-{locked.id}-out",
+    )
+
+    locked.status = TransferRequest.Status.DISPATCHED
+    locked.save()
+    return locked
+
+
+# ---------------------------------------------------------------------------
+# Receipt
+# ---------------------------------------------------------------------------
+
+
+@transaction.atomic
+def receive_transfer(*, transfer, performed_by, quantity_received, condition, notes=""):
+    locked = TransferRequest.objects.select_for_update().get(pk=transfer.pk)
+    if locked.status not in (
+        TransferRequest.Status.DISPATCHED,
+        TransferRequest.Status.IN_TRANSIT,
+    ):
+        raise TransferError(
+            f"Cannot receive a transfer in status {locked.status}."
+        )
+    if quantity_received <= 0:
+        raise TransferError("quantity_received must be positive.")
+    if quantity_received > locked.quantity_approved:
+        raise TransferError(
+            f"quantity_received ({quantity_received}) exceeds quantity_approved "
+            f"({locked.quantity_approved})."
+        )
+
+    condition = (condition or "OK").upper()
+    allowed_conditions = {"OK", "DAMAGED", "TEMPERATURE_EXCURSION"}
+    if condition not in allowed_conditions:
+        raise TransferError(f"Invalid condition '{condition}'.")
+
+    # Destination batch: preserve source batch_number and expiry for traceability
+    existing = (
+        StockBatch.objects.select_for_update()
+        .filter(
+            facility=locked.destination_facility,
+            product=locked.product,
+            batch_number=locked.source_batch.batch_number,
+        )
+        .first()
+    )
+
+    if existing is not None:
+        if existing.expiry_date != locked.source_batch.expiry_date:
+            raise TransferError(
+                f"Destination already holds batch '{existing.batch_number}' with "
+                f"expiry {existing.expiry_date}; source batch expiry is "
+                f"{locked.source_batch.expiry_date}. Cannot merge mismatched batches."
+            )
+        if existing.storage_status != StockBatch.StorageStatus.OK and condition == "OK":
+            raise TransferError(
+                f"Destination batch is currently {existing.storage_status}; "
+                "cannot receive into a non-OK batch with condition OK."
+            )
+        existing.quantity_available += quantity_received
+        existing.quantity_received += quantity_received
+        if condition != "OK":
+            existing.storage_status = condition
+        existing.save(
+            update_fields=[
+                "quantity_available",
+                "quantity_received",
+                "storage_status",
+                "updated_at",
+            ]
+        )
+        dest_batch = existing
+    else:
+        dest_batch = StockBatch.objects.create(
+            facility=locked.destination_facility,
+            product=locked.product,
+            batch_number=locked.source_batch.batch_number,
+            expiry_date=locked.source_batch.expiry_date,
+            quantity_received=quantity_received,
+            quantity_available=quantity_received,
+            storage_status=condition if condition != "OK" else "OK",
+            source_reference=f"Transfer #{locked.id}",
+            created_by=performed_by,
+        )
+
+    StockMovement.objects.create(
+        batch=dest_batch,
+        movement_type=StockMovement.MovementType.TRANSFER_IN,
+        direction=StockMovement.Direction.IN,
+        quantity=quantity_received,
+        reference_type="TransferRequest",
+        reference_id=str(locked.id),
+        reason=notes or "Received transfer",
+        performed_by=performed_by,
+        idempotency_key=f"transfer-{locked.id}-in",
+    )
+
+    locked.quantity_received = quantity_received
+    locked.received_by = performed_by
+    locked.received_at = timezone.now()
+    locked.condition_on_receipt = condition
+    locked.status = TransferRequest.Status.RECEIVED
+    locked.save()
+
+    return locked, dest_batch
+
+
+# ---------------------------------------------------------------------------
+# Cancel
+# ---------------------------------------------------------------------------
+
+
+@transaction.atomic
+def cancel_transfer(*, transfer, performed_by, reason=""):
+    locked = TransferRequest.objects.select_for_update().get(pk=transfer.pk)
+    if locked.status not in (
+        TransferRequest.Status.REQUESTED,
+        TransferRequest.Status.UNDER_REVIEW,
+        TransferRequest.Status.APPROVED,
+    ):
+        raise TransferError(f"Cannot cancel a transfer in status {locked.status}.")
+
+    if locked.status == TransferRequest.Status.APPROVED:
+        batch = StockBatch.objects.select_for_update().get(pk=locked.source_batch_id)
+        batch.quantity_reserved = max(
+            0, batch.quantity_reserved - locked.quantity_approved
+        )
+        batch.save(update_fields=["quantity_reserved", "updated_at"])
+
+    locked.status = TransferRequest.Status.CANCELLED
+    if reason:
+        locked.notes = (locked.notes + "\n" if locked.notes else "") + f"Cancelled: {reason}"
+    locked.save()
+    return locked
+```
+
+## Step 3 — Update `inventory/calculations.py`
+
+Extend imports and add `get_incoming_stock`. Also update `get_usable_stock` to exclude reserved stock (per docs "available for use"):
+
+```python
+from django.db.models import F, Sum
+```
+
+Replace `get_usable_stock` with:
+
+```python
+def get_usable_stock(facility, product, as_of=None):
+    """
+    Stock that is physically OK, not expired, and not committed to another
+    approved transfer (i.e. available for allocation).
+    """
+    as_of = as_of or timezone.localdate()
+    batches = StockBatch.objects.filter(
+        facility=facility,
+        product=product,
+        storage_status=StockBatch.StorageStatus.OK,
+        expiry_date__gte=as_of,
+        quantity_available__gt=0,
+    )
+    return sum(
+        max(0, b.quantity_available - b.quantity_reserved) for b in batches
+    )
+
+
+def get_incoming_stock(facility, product, horizon_days=30, as_of=None):
+    """
+    Confirmed (approved/dispatched/in-transit) transfers headed to this facility.
+    Unapproved or rejected transfers are NOT counted.
+    """
+    from .models import TransferRequest
+
+    as_of = as_of or timezone.localdate()
+    horizon_end = as_of + timedelta(days=horizon_days)
+
+    qs = TransferRequest.objects.filter(
+        destination_facility=facility,
+        product=product,
+        status__in=[
+            TransferRequest.Status.APPROVED,
+            TransferRequest.Status.DISPATCHED,
+            TransferRequest.Status.IN_TRANSIT,
+        ],
+    ).filter(
+        models.Q(expected_arrival_at__isnull=True)
+        | models.Q(expected_arrival_at__date__lte=horizon_end)
+    )
+    return int(qs.aggregate(total=Sum("quantity_approved"))["total"] or 0)
+```
+
+Add `from django.db import models` at the top of the file.
+
+Update `get_product_summary` — the `incoming_stock` line and the `projected_gap` formula:
+
+```python
+    usable = get_usable_stock(facility, product, as_of)
+    reserved = get_reserved_stock(facility, product)
+    incoming = get_incoming_stock(facility, product, horizon_days, as_of)
+    daily = get_estimated_daily_usage(facility, product, usage_window_days, as_of)
+
+    if daily is None:
+        projected_demand = None
+        projected_gap = None
+        days_of_stock = None
+        daily_float = None
+    else:
+        projected_demand = int(
+            (daily * horizon_days).to_integral_value(rounding=ROUND_CEILING)
+        )
+        projected_gap = max(0, projected_demand - usable - incoming)
+        days_of_stock = round(float(usable) / float(daily), 2) if usable else 0.0
+        daily_float = float(daily)
+
+    ...
+
+    return {
+        ...
+        "usable_stock": usable,
+        "reserved_stock": reserved,
+        "incoming_stock": incoming,
+        "projected_demand": projected_demand,
+        "projected_gap": projected_gap,
+        "days_of_stock": days_of_stock,
+        ...
+    }
+```
+
+## Step 4 — Add transfer serializers to `inventory/serializers.py`
+
+Append:
+
+```python
+from .models import TransferRequest
+
+
+class TransferRequestSerializer(serializers.ModelSerializer):
+    source_facility_name = serializers.CharField(
+        source="source_facility.name", read_only=True
+    )
+    destination_facility_name = serializers.CharField(
+        source="destination_facility.name", read_only=True
+    )
+    product_name = serializers.CharField(source="product.name", read_only=True)
+    source_batch_number = serializers.CharField(
+        source="source_batch.batch_number", read_only=True
+    )
+    source_batch_expiry = serializers.DateField(
+        source="source_batch.expiry_date", read_only=True
+    )
+    requested_by_username = serializers.CharField(
+        source="requested_by.username", read_only=True, default=None
+    )
+    approved_by_username = serializers.CharField(
+        source="approved_by.username", read_only=True, default=None
+    )
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+    priority_display = serializers.CharField(
+        source="get_priority_display", read_only=True
+    )
+
+    class Meta:
+        model = TransferRequest
+        fields = "__all__"
+        read_only_fields = (
+            "id",
+            "status",
+            "quantity_approved",
+            "quantity_received",
+            "requested_by",
+            "requested_by_username",
+            "approved_by",
+            "approved_by_username",
+            "approved_at",
+            "rejection_reason",
+            "received_by",
+            "received_at",
+            "condition_on_receipt",
+            "created_at",
+            "updated_at",
+        )
+
+
+class TransferRequestCreateSerializer(serializers.Serializer):
+    source_facility = serializers.PrimaryKeyRelatedField(
+        queryset=__import__("facilities.models", fromlist=["Facility"]).Facility.objects.filter(
+            status="APPROVED", is_active=True
+        )
+    )
+    destination_facility = serializers.PrimaryKeyRelatedField(
+        queryset=__import__("facilities.models", fromlist=["Facility"]).Facility.objects.filter(
+            status="APPROVED", is_active=True
+        )
+    )
+    product = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.filter(active=True)
+    )
+    source_batch = serializers.PrimaryKeyRelatedField(queryset=StockBatch.objects.all())
+    quantity_requested = serializers.IntegerField(min_value=1)
+    priority = serializers.ChoiceField(
+        choices=[p for p in TransferRequest.Priority.values], default="MEDIUM"
+    )
+    expected_dispatch_at = serializers.DateTimeField(required=False, allow_null=True)
+    expected_arrival_at = serializers.DateTimeField(required=False, allow_null=True)
+    notes = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class TransferApproveSerializer(serializers.Serializer):
+    quantity_approved = serializers.IntegerField(min_value=1, required=False)
+
+
+class TransferRejectSerializer(serializers.Serializer):
+    rejection_reason = serializers.CharField(required=True, allow_blank=False)
+
+
+class TransferDispatchSerializer(serializers.Serializer):
+    notes = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class TransferReceiptSerializer(serializers.Serializer):
+    quantity_received = serializers.IntegerField(min_value=1)
+    condition = serializers.ChoiceField(
+        choices=["OK", "DAMAGED", "TEMPERATURE_EXCURSION"], default="OK"
+    )
+    notes = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class TransferCancelSerializer(serializers.Serializer):
+    reason = serializers.CharField(required=False, allow_blank=True, default="")
+```
+
+## Step 5 — `coordination/models.py`
+
+Replace the empty file with:
+
+```python
+from django.db import models
+from django.utils import timezone
+
+
+class DeliveryCoordination(models.Model):
+    """
+    1..N record of phone-based delivery arrangements for a transfer.
+    Each POST to /transfers/{id}/delivery-coordination/ creates a new entry so
+    every call is auditable.
+    """
+
+    class Payer(models.TextChoices):
+        CENTRAL = "CENTRAL", "Central"
+        SENDER = "SENDER", "Sender"
+        RECEIVER = "RECEIVER", "Receiver"
+        PARTNER = "PARTNER", "Partner"
+        UNDECIDED = "UNDECIDED", "Undecided"
+
+    class PhoneStatus(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        CONFIRMED = "CONFIRMED", "Confirmed"
+        CANCELLED = "CANCELLED", "Cancelled"
+
+    class DeliveryStatus(models.TextChoices):
+        NOT_ARRANGED = "NOT_ARRANGED", "Not Arranged"
+        ARRANGED_BY_PHONE = "ARRANGED_BY_PHONE", "Arranged by Phone"
+        DISPATCHED = "DISPATCHED", "Dispatched"
+        RECEIVED = "RECEIVED", "Received"
+        FAILED = "FAILED", "Failed"
+        DISCREPANCY = "DISCREPANCY", "Discrepancy"
+
+    transfer_request = models.ForeignKey(
+        "inventory.TransferRequest",
+        on_delete=models.CASCADE,
+        related_name="delivery_coordinations",
+    )
+    transport_method = models.CharField(max_length=64, blank=True)
+    transport_provider = models.CharField(max_length=128, blank=True)
+    contact_person_name = models.CharField(max_length=128, blank=True)
+    contact_phone = models.CharField(max_length=32, blank=True)
+    transport_payer = models.CharField(
+        max_length=16, choices=Payer.choices, default=Payer.UNDECIDED
+    )
+    estimated_cost = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True
+    )
+    currency = models.CharField(max_length=8, default="ETB")
+    agreed_pickup_at = models.DateTimeField(null=True, blank=True)
+    expected_arrival_at = models.DateTimeField(null=True, blank=True)
+    phone_coordination_status = models.CharField(
+        max_length=16, choices=PhoneStatus.choices, default=PhoneStatus.PENDING
+    )
+    coordinator = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="delivery_coordinations",
+    )
+    last_contacted_at = models.DateTimeField(null=True, blank=True)
+    delivery_status = models.CharField(
+        max_length=32,
+        choices=DeliveryStatus.choices,
+        default=DeliveryStatus.NOT_ARRANGED,
+    )
+    receipt_confirmed_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="delivery_receipts_confirmed",
+    )
+    receipt_confirmed_at = models.DateTimeField(null=True, blank=True)
+    quantity_received = models.PositiveIntegerField(null=True, blank=True)
+    condition_on_receipt = models.CharField(max_length=32, blank=True)
+    notes = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["transfer_request", "created_at"])]
+
+    def __str__(self):
+        return f"Delivery for transfer #{self.transfer_request_id}"
+
+
+class SupplyGapReport(models.Model):
+    """
+    One *active* gap per (facility, product). Terminal reports (RESOLVED/CLOSED)
+    are immutable; a new gap that re-emerges creates a new report.
+    """
+
+    class Priority(models.TextChoices):
+        CRITICAL = "CRITICAL", "Critical"
+        HIGH = "HIGH", "High"
+        MEDIUM = "MEDIUM", "Medium"
+        LOW = "LOW", "Low"
+
+    class Status(models.TextChoices):
+        OPEN = "OPEN", "Open"
+        UNDER_REVIEW = "UNDER_REVIEW", "Under Review"
+        ASSIGNED = "ASSIGNED", "Assigned"
+        ACTION_PLANNED = "ACTION_PLANNED", "Action Planned"
+        ESCALATED = "ESCALATED", "Escalated"
+        RESOLVED = "RESOLVED", "Resolved"
+        CLOSED = "CLOSED", "Closed"
+
+    NON_TERMINAL_STATUSES = [
+        Status.OPEN,
+        Status.UNDER_REVIEW,
+        Status.ASSIGNED,
+        Status.ACTION_PLANNED,
+        Status.ESCALATED,
+    ]
+    TERMINAL_STATUSES = [Status.RESOLVED, Status.CLOSED]
+
+    facility = models.ForeignKey(
+        "facilities.Facility",
+        on_delete=models.PROTECT,
+        related_name="supply_gaps",
+    )
+    product = models.ForeignKey(
+        "inventory.Product",
+        on_delete=models.PROTECT,
+        related_name="supply_gaps",
+    )
+    reporting_horizon_start = models.DateField()
+    reporting_horizon_end = models.DateField()
+    projected_demand = models.IntegerField()
+    usable_stock = models.IntegerField()
+    reliable_incoming_quantity = models.IntegerField(default=0)
+    uncovered_quantity = models.IntegerField()
+    priority = models.CharField(max_length=16, choices=Priority.choices)
+    reason_summary = models.TextField(blank=True)
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.OPEN
+    )
+    assigned_to = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_supply_gaps",
+    )
+    resolution_notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["priority", "-uncovered_quantity", "-created_at"]
+        indexes = [
+            models.Index(fields=["status", "priority"]),
+            models.Index(fields=["facility", "product"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["facility", "product"],
+                condition=models.Q(
+                    status__in=[
+                        "OPEN",
+                        "UNDER_REVIEW",
+                        "ASSIGNED",
+                        "ACTION_PLANNED",
+                        "ESCALATED",
+                    ]
+                ),
+                name="unique_open_gap_per_facility_product",
+            )
+        ]
+
+    def __str__(self):
+        return (
+            f"Gap {self.facility_id}/{self.product_id} "
+            f"({self.priority}, qty={self.uncovered_quantity})"
+        )
+
+    def save(self, *args, **kwargs):
+        if self.status in (self.Status.RESOLVED, self.Status.CLOSED):
+            if self.resolved_at is None:
+                self.resolved_at = timezone.now()
+        else:
+            self.resolved_at = None
+        super().save(*args, **kwargs)
+```
+
+## Step 6 — `coordination/services.py` (new file)
+
+```python
+from datetime import date, timedelta
+
+from django.db import transaction
+from django.utils import timezone
+
+from inventory.calculations import get_product_summary
+from inventory.models import Product, StockBatch
+
+from .models import SupplyGapReport
+
+
+def _derive_priority(days_of_stock, projected_gap, projected_demand):
+    if projected_gap is None or projected_gap <= 0:
+        return None
+    if days_of_stock is None or days_of_stock <= 0:
+        return SupplyGapReport.Priority.CRITICAL
+    if days_of_stock < 7:
+        return SupplyGapReport.Priority.CRITICAL
+    if days_of_stock < 14:
+        return SupplyGapReport.Priority.HIGH
+    if days_of_stock < 30:
+        return SupplyGapReport.Priority.MEDIUM
+    return SupplyGapReport.Priority.LOW
+
+
+def _build_reason_summary(summary):
+    parts = [
+        f"Projected demand {summary['projected_demand']} over horizon;",
+        f"usable stock {summary['usable_stock']};",
+        f"reliable incoming {summary['incoming_stock']};",
+        f"uncovered {summary['projected_gap']}.",
+    ]
+    if summary["days_of_stock"] is not None:
+        parts.append(f"Days of stock: {summary['days_of_stock']}.")
+    return " ".join(parts)
+
+
+@transaction.atomic
+def upsert_supply_gap(
+    *,
+    facility,
+    product,
+    horizon_days=30,
+    usage_window_days=30,
+    summary=None,
+):
+    """
+    Create or update the single active gap report for (facility, product).
+    Returns (report_or_None, created_bool).
+    """
+    if summary is None:
+        summary = get_product_summary(
+            facility,
+            product,
+            horizon_days=horizon_days,
+            usage_window_days=usage_window_days,
+        )
+
+    priority = _derive_priority(
+        summary["days_of_stock"],
+        summary["projected_gap"],
+        summary["projected_demand"],
+    )
+    if priority is None:
+        return None, False
+
+    today = timezone.localdate()
+    horizon_end = today + timedelta(days=horizon_days)
+
+    existing = (
+        SupplyGapReport.objects.select_for_update()
+        .filter(
+            facility=facility,
+            product=product,
+            status__in=SupplyGapReport.NON_TERMINAL_STATUSES,
+        )
+        .first()
+    )
+
+    if existing:
+        existing.reporting_horizon_start = today
+        existing.reporting_horizon_end = horizon_end
+        existing.projected_demand = summary["projected_demand"]
+        existing.usable_stock = summary["usable_stock"]
+        existing.reliable_incoming_quantity = summary["incoming_stock"]
+        existing.uncovered_quantity = summary["projected_gap"]
+        existing.priority = priority
+        existing.reason_summary = _build_reason_summary(summary)
+        existing.save()
+        return existing, False
+
+    report = SupplyGapReport.objects.create(
+        facility=facility,
+        product=product,
+        reporting_horizon_start=today,
+        reporting_horizon_end=horizon_end,
+        projected_demand=summary["projected_demand"],
+        usable_stock=summary["usable_stock"],
+        reliable_incoming_quantity=summary["incoming_stock"],
+        uncovered_quantity=summary["projected_gap"],
+        priority=priority,
+        reason_summary=_build_reason_summary(summary),
+        status=SupplyGapReport.Status.OPEN,
+    )
+    return report, True
+
+
+def refresh_supply_gaps(*, facility=None, horizon_days=30, usage_window_days=30):
+    """
+    Iterate every (facility, product) that has batches and upsert its open gap.
+    Returns (created, updated).
+    """
+    from facilities.models import Facility
+
+    facilities = Facility.objects.filter(status="APPROVED", is_active=True)
+    if facility is not None:
+        facilities = facilities.filter(pk=facility.pk)
+
+    created_count = 0
+    updated_count = 0
+    for fac in facilities:
+        product_ids = set(
+            StockBatch.objects.filter(facility=fac).values_list(
+                "product_id", flat=True
+            )
+        )
+        products = Product.objects.filter(id__in=product_ids, active=True)
+        for product in products:
+            report, was_created = upsert_supply_gap(
+                facility=fac,
+                product=product,
+                horizon_days=horizon_days,
+                usage_window_days=usage_window_days,
+            )
+            if report is None:
+                continue
+            if was_created:
+                created_count += 1
+            else:
+                updated_count += 1
+    return created_count, updated_count
+```
+
+## Step 7 — `coordination/serializers.py` (new file)
+
+```python
+from rest_framework import serializers
+
+from .models import DeliveryCoordination, SupplyGapReport
+
+
+class DeliveryCoordinationSerializer(serializers.ModelSerializer):
+    coordinator_username = serializers.CharField(
+        source="coordinator.username", read_only=True, default=None
+    )
+    transfer_request_id = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = DeliveryCoordination
+        fields = "__all__"
+        read_only_fields = (
+            "id",
+            "transfer_request",
+            "coordinator",
+            "coordinator_username",
+            "created_at",
+            "updated_at",
+        )
+
+
+class DeliveryCoordinationCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeliveryCoordination
+        fields = (
+            "transport_method",
+            "transport_provider",
+            "contact_person_name",
+            "contact_phone",
+            "transport_payer",
+            "estimated_cost",
+            "currency",
+            "agreed_pickup_at",
+            "expected_arrival_at",
+            "phone_coordination_status",
+            "delivery_status",
+            "notes",
+        )
+
+
+class SupplyGapReportSerializer(serializers.ModelSerializer):
+    facility_name = serializers.CharField(source="facility.name", read_only=True)
+    product_name = serializers.CharField(source="product.name", read_only=True)
+    product_category = serializers.CharField(
+        source="product.category", read_only=True
+    )
+    assigned_to_username = serializers.CharField(
+        source="assigned_to.username", read_only=True, default=None
+    )
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+    priority_display = serializers.CharField(
+        source="get_priority_display", read_only=True
+    )
+
+    class Meta:
+        model = SupplyGapReport
+        fields = "__all__"
+        read_only_fields = fields
+
+
+class SupplyGapAssignSerializer(serializers.Serializer):
+    assigned_to = serializers.IntegerField(required=True)
+    note = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class SupplyGapEscalateSerializer(serializers.Serializer):
+    note = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class SupplyGapResolveSerializer(serializers.Serializer):
+    resolution_notes = serializers.CharField(required=True, allow_blank=False)
+    final_status = serializers.ChoiceField(
+        choices=["RESOLVED", "CLOSED"], default="RESOLVED"
+    )
+```
+
+## Step 8 — `coordination/permissions.py` (new file)
+
+```python
+from rest_framework.permissions import BasePermission
+
+from accounts.models import User
+
+
+class CanCoordinateDeliveries(BasePermission):
+    """Central users OR any staff of the two facilities on the transfer."""
+
+    def has_permission(self, request, view):
+        u = request.user
+        if not u.is_authenticated:
+            return False
+        if u.role in (User.Role.SYSTEM_ADMIN, User.Role.CENTRAL_COORDINATOR):
+            return True
+        return u.role in {
+            User.Role.FACILITY_MANAGER,
+            User.Role.PHARMACIST,
+            User.Role.INVENTORY_STAFF,
+            User.Role.PHARMACY_STAFF,
+        }
+
+
+class IsCentralForGaps(BasePermission):
+    def has_permission(self, request, view):
+        u = request.user
+        return u.is_authenticated and u.role in {
+            User.Role.SYSTEM_ADMIN,
+            User.Role.CENTRAL_COORDINATOR,
+        }
+```
+
+## Step 9 — `coordination/views.py` (new file)
+
+```python
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from rest_framework import mixins, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+from accounts.models import User
+from accounts.permissions import IsCentralUser
+from accounts.services import log_audit
+from inventory.models import TransferRequest
+from inventory.serializers import TransferRequestSerializer
+
+from .models import DeliveryCoordination, SupplyGapReport
+from .permissions import CanCoordinateDeliveries, IsCentralForGaps
+from .serializers import (
+    DeliveryCoordinationCreateSerializer,
+    DeliveryCoordinationSerializer,
+    SupplyGapAssignSerializer,
+    SupplyGapEscalateSerializer,
+    SupplyGapReportSerializer,
+    SupplyGapResolveSerializer,
+)
+from .services import refresh_supply_gaps
+
+
+def _ip(request):
+    xff = request.META.get("HTTP_X_FORWARDED_FOR")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR")
+
+
+# ---------------------------------------------------------------------------
+# Delivery coordination (nested under a transfer)
+# ---------------------------------------------------------------------------
+
+
+class TransferDeliveryCoordinationViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    viewsets.GenericViewSet,
+):
+    permission_classes = [IsAuthenticated, CanCoordinateDeliveries]
+
+    def _get_transfer(self):
+        try:
+            transfer = TransferRequest.objects.get(pk=self.kwargs["transfer_pk"])
+        except TransferRequest.DoesNotExist:
+            raise PermissionDenied("Transfer not found.")
+
+        user = self.request.user
+        if user.role in (User.Role.SYSTEM_ADMIN, User.Role.CENTRAL_COORDINATOR):
+            return transfer
+        if user.facility_id and user.facility_id in (
+            transfer.source_facility_id,
+            transfer.destination_facility_id,
+        ):
+            return transfer
+        raise PermissionDenied("Not authorized for this transfer.")
+
+    def get_queryset(self):
+        transfer = self._get_transfer()
+        return DeliveryCoordination.objects.filter(
+            transfer_request=transfer
+        ).select_related("coordinator")
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return DeliveryCoordinationCreateSerializer
+        return DeliveryCoordinationSerializer
+
+    def create(self, request, *args, **kwargs):
+        transfer = self._get_transfer()
+        ser = DeliveryCoordinationCreateSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+
+        entry = ser.save(
+            transfer_request=transfer,
+            coordinator=request.user,
+            last_contacted_at=timezone.now(),
+        )
+        log_audit(
+            request.user,
+            "DELIVERY_COORDINATION_CREATED",
+            "DeliveryCoordination",
+            entry.id,
+            metadata={
+                "transfer_id": transfer.id,
+                "delivery_status": entry.delivery_status,
+            },
+            ip_address=_ip(request),
+        )
+        return Response(
+            DeliveryCoordinationSerializer(entry).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Supply gap reports (central only)
+# ---------------------------------------------------------------------------
+
+
+class SupplyGapReportViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
+    permission_classes = [IsAuthenticated, IsCentralForGaps]
+    queryset = SupplyGapReport.objects.select_related(
+        "facility", "product", "assigned_to"
+    )
+    serializer_class = SupplyGapReportSerializer
+    filterset_fields = (
+        "status",
+        "priority",
+        "facility",
+        "product",
+        "assigned_to",
+    )
+    search_fields = ("reason_summary", "facility__name", "product__name")
+    ordering_fields = ("created_at", "updated_at", "priority", "uncovered_quantity")
+    ordering = ["priority", "-uncovered_quantity"]
+
+    @action(detail=False, methods=["post"])
+    def refresh(self, request):
+        facility_id = request.query_params.get("facility")
+        facility = None
+        if facility_id:
+            from facilities.models import Facility
+
+            try:
+                facility = Facility.objects.get(pk=int(facility_id))
+            except (Facility.DoesNotExist, ValueError):
+                return Response(
+                    {"detail": "Facility not found.", "code": "facility_not_found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+        try:
+            horizon_days = int(request.query_params.get("horizon_days", 30))
+            usage_window_days = int(
+                request.query_params.get("usage_window_days", 30)
+            )
+        except ValueError:
+            return Response(
+                {
+                    "detail": "horizon_days and usage_window_days must be integers.",
+                    "code": "invalid_query",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        created, updated = refresh_supply_gaps(
+            facility=facility,
+            horizon_days=horizon_days,
+            usage_window_days=usage_window_days,
+        )
+
+        active = SupplyGapReport.objects.filter(
+            status__in=SupplyGapReport.NON_TERMINAL_STATUSES
+        ).order_by("priority", "-uncovered_quantity")
+
+        return Response(
+            {
+                "created": created,
+                "updated": updated,
+                "active_count": active.count(),
+                "gaps": SupplyGapReportSerializer(active, many=True).data,
+            }
+        )
+
+    @action(detail=True, methods=["post"])
+    def assign(self, request, pk=None):
+        gap = self.get_object()
+        ser = SupplyGapAssignSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+
+        try:
+            user = User.objects.get(pk=ser.validated_data["assigned_to"])
+        except User.DoesNotExist:
+            return Response(
+                {"detail": "User not found.", "code": "user_not_found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if not user.is_active:
+            return Response(
+                {"detail": "User is inactive.", "code": "user_inactive"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if gap.status in SupplyGapReport.TERMINAL_STATUSES:
+            return Response(
+                {
+                    "detail": "Cannot assign a resolved/closed gap.",
+                    "code": "invalid_state",
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        gap.assigned_to = user
+        gap.status = SupplyGapReport.Status.ASSIGNED
+        if ser.validated_data.get("note"):
+            gap.reason_summary = (
+                gap.reason_summary
+                + f"\nAssigned by {request.user.username}: "
+                + ser.validated_data["note"]
+            )
+        gap.save()
+
+        log_audit(
+            request.user,
+            "SUPPLY_GAP_ASSIGNED",
+            "SupplyGapReport",
+            gap.id,
+            metadata={"assigned_to": user.id},
+            ip_address=_ip(request),
+        )
+        return Response(SupplyGapReportSerializer(gap).data)
+
+    @action(detail=True, methods=["post"])
+    def escalate(self, request, pk=None):
+        gap = self.get_object()
+        if gap.status in SupplyGapReport.TERMINAL_STATUSES:
+            return Response(
+                {
+                    "detail": "Cannot escalate a resolved/closed gap.",
+                    "code": "invalid_state",
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        if gap.status == SupplyGapReport.Status.ESCALATED:
+            return Response(
+                {"detail": "Already escalated.", "code": "invalid_state"},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        ser = SupplyGapEscalateSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        note = ser.validated_data.get("note", "")
+        if note:
+            gap.reason_summary = gap.reason_summary + f"\nEscalated: {note}"
+
+        gap.status = SupplyGapReport.Status.ESCALATED
+        gap.save()
+        log_audit(
+            request.user,
+            "SUPPLY_GAP_ESCALATED",
+            "SupplyGapReport",
+            gap.id,
+            metadata={"note": note},
+            ip_address=_ip(request),
+        )
+        return Response(SupplyGapReportSerializer(gap).data)
+
+    @action(detail=True, methods=["post"])
+    def resolve(self, request, pk=None):
+        gap = self.get_object()
+        if gap.status in SupplyGapReport.TERMINAL_STATUSES:
+            return Response(
+                {"detail": "Already resolved/closed.", "code": "invalid_state"},
+                status=status.HTTP_409_CONFLICT,
+            )
+        ser = SupplyGapResolveSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+
+        gap.status = ser.validated_data["final_status"]
+        gap.resolution_notes = ser.validated_data["resolution_notes"]
+        gap.save()
+        log_audit(
+            request.user,
+            "SUPPLY_GAP_RESOLVED",
+            "SupplyGapReport",
+            gap.id,
+            metadata={"final_status": gap.status},
+            ip_address=_ip(request),
+        )
+        return Response(SupplyGapReportSerializer(gap).data)
+```
+
+## Step 10 — `coordination/urls.py` (new file)
+
+```python
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
+
+from .views import SupplyGapReportViewSet, TransferDeliveryCoordinationViewSet
+
+router = DefaultRouter()
+router.register("supply-gaps", SupplyGapReportViewSet, basename="supply-gap")
+
+delivery_list_create = TransferDeliveryCoordinationViewSet.as_view(
+    {"get": "list", "post": "create"}
+)
+
+urlpatterns = [
+    path(
+        "transfers/<int:transfer_pk>/delivery-coordination/",
+        delivery_list_create,
+        name="transfer-delivery-coordination",
+    ),
+    path("central/", include(router.urls)),
+]
+```
+
+## Step 11 — Transfer endpoints in `inventory/views.py`
+
+Add these imports at the top of the file:
+
+```python
+from accounts.models import User as _User
+from .serializers import (
+    TransferApproveSerializer,
+    TransferCancelSerializer,
+    TransferDispatchSerializer,
+    TransferReceiptSerializer,
+    TransferRejectSerializer,
+    TransferRequestCreateSerializer,
+    TransferRequestSerializer,
+)
+from .transfers import (
+    TransferError,
+    approve_transfer,
+    cancel_transfer,
+    create_transfer_request,
+    dispatch_transfer,
+    receive_transfer,
+    reject_transfer,
+)
+```
+
+Append this ViewSet at the bottom of `inventory/views.py`:
+
+```python
+# ----------------------------- Transfers -----------------------------
+
+
+def _transfer_error_response(exc):
+    return Response(
+        {"detail": str(exc), "code": "transfer_error"},
+        status=status.HTTP_400_BAD_REQUEST,
+    )
+
+
+def _transfer_state_conflict(exc):
+    return Response(
+        {"detail": str(exc), "code": "invalid_state"},
+        status=status.HTTP_409_CONFLICT,
+    )
+
+
+class TransferRequestViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.CreateModelMixin,
+    viewsets.GenericViewSet,
+):
+    filterset_fields = ("status", "priority", "source_facility", "destination_facility", "product")
+    search_fields = ("source_facility__name", "destination_facility__name", "product__name")
+    ordering_fields = ("created_at", "updated_at", "priority")
+    http_method_names = ["get", "post", "head", "options"]
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return TransferRequestCreateSerializer
+        return TransferRequestSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = TransferRequest.objects.select_related(
+            "source_facility",
+            "destination_facility",
+            "product",
+            "source_batch",
+            "requested_by",
+            "approved_by",
+        )
+        if user.role in (User.Role.SYSTEM_ADMIN, User.Role.CENTRAL_COORDINATOR):
+            return qs
+        if user.facility_id:
+            return qs.filter(
+                models.Q(source_facility_id=user.facility_id)
+                | models.Q(destination_facility_id=user.facility_id)
+            )
+        return qs.none()
+
+    # -------------------- Create --------------------
+
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        if user.role not in (
+            User.Role.SYSTEM_ADMIN,
+            User.Role.CENTRAL_COORDINATOR,
+            User.Role.FACILITY_MANAGER,
+            User.Role.PHARMACIST,
+            User.Role.INVENTORY_STAFF,
+        ):
+            return Response(
+                {
+                    "detail": "Your role cannot request transfers.",
+                    "code": "forbidden",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        ser = TransferRequestCreateSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+
+        source = ser.validated_data["source_facility"]
+        destination = ser.validated_data["destination_facility"]
+
+        is_central = user.role in (
+            User.Role.SYSTEM_ADMIN,
+            User.Role.CENTRAL_COORDINATOR,
+        )
+        if not is_central:
+            if not user.facility_id or user.facility_id not in (
+                source.id,
+                destination.id,
+            ):
+                return Response(
+                    {
+                        "detail": "You must belong to the source or destination facility.",
+                        "code": "forbidden",
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        try:
+            transfer = create_transfer_request(
+                source_facility=source,
+                destination_facility=destination,
+                product=ser.validated_data["product"],
+                source_batch=ser.validated_data["source_batch"],
+                quantity_requested=ser.validated_data["quantity_requested"],
+                priority=ser.validated_data["priority"],
+                requested_by=user,
+                expected_dispatch_at=ser.validated_data.get("expected_dispatch_at"),
+                expected_arrival_at=ser.validated_data.get("expected_arrival_at"),
+                notes=ser.validated_data.get("notes", ""),
+            )
+        except TransferError as exc:
+            return _transfer_error_response(exc)
+
+        log_audit(
+            user,
+            "TRANSFER_REQUESTED",
+            "TransferRequest",
+            transfer.id,
+            metadata={
+                "source_facility_id": source.id,
+                "destination_facility_id": destination.id,
+                "product_id": transfer.product_id,
+                "quantity_requested": transfer.quantity_requested,
+            },
+            ip_address=_ip(request),
+        )
+        return Response(
+            TransferRequestSerializer(transfer).data, status=status.HTTP_201_CREATED
+        )
+
+    # -------------------- Approve --------------------
+
+    @action(detail=True, methods=["post"])
+    def approve(self, request, pk=None):
+        transfer = self.get_object()
+        user = request.user
+        is_central = user.role in (
+            User.Role.SYSTEM_ADMIN,
+            User.Role.CENTRAL_COORDINATOR,
+        )
+        if not is_central:
+            if not (
+                user.role == User.Role.FACILITY_MANAGER
+                and user.facility_id == transfer.source_facility_id
+            ):
+                return Response(
+                    {
+                        "detail": "Only central users or the source facility manager can approve.",
+                        "code": "forbidden",
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        ser = TransferApproveSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        qty = ser.validated_data.get("quantity_approved", transfer.quantity_requested)
+
+        try:
+            transfer = approve_transfer(
+                transfer=transfer, approved_by=user, quantity_approved=qty
+            )
+        except TransferError as exc:
+            if "Cannot approve" in str(exc):
+                return _transfer_state_conflict(exc)
+            return _transfer_error_response(exc)
+
+        log_audit(
+            user,
+            "TRANSFER_APPROVED",
+            "TransferRequest",
+            transfer.id,
+            metadata={"quantity_approved": qty},
+            ip_address=_ip(request),
+        )
+        return Response(TransferRequestSerializer(transfer).data)
+
+    # -------------------- Reject --------------------
+
+    @action(detail=True, methods=["post"])
+    def reject(self, request, pk=None):
+        transfer = self.get_object()
+        user = request.user
+        is_central = user.role in (
+            User.Role.SYSTEM_ADMIN,
+            User.Role.CENTRAL_COORDINATOR,
+        )
+        if not is_central:
+            if not (
+                user.role == User.Role.FACILITY_MANAGER
+                and user.facility_id
+                in (transfer.source_facility_id, transfer.destination_facility_id)
+            ):
+                return Response(
+                    {"detail": "Not authorized.", "code": "forbidden"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        ser = TransferRejectSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+
+        try:
+            transfer = reject_transfer(
+                transfer=transfer,
+                reviewed_by=user,
+                rejection_reason=ser.validated_data["rejection_reason"],
+            )
+        except TransferError as exc:
+            if "Cannot reject" in str(exc):
+                return _transfer_state_conflict(exc)
+            return _transfer_error_response(exc)
+
+        log_audit(
+            user,
+            "TRANSFER_REJECTED",
+            "TransferRequest",
+            transfer.id,
+            metadata={"reason": transfer.rejection_reason},
+            ip_address=_ip(request),
+        )
+        return Response(TransferRequestSerializer(transfer).data)
+
+    # -------------------- Dispatch --------------------
+
+    @action(detail=True, methods=["post"])
+    def dispatch(self, request, pk=None):
+        transfer = self.get_object()
+        user = request.user
+        is_central = user.role in (
+            User.Role.SYSTEM_ADMIN,
+            User.Role.CENTRAL_COORDINATOR,
+        )
+        if not is_central:
+            if not (
+                user.facility_id == transfer.source_facility_id
+                and user.role
+                in (
+                    User.Role.FACILITY_MANAGER,
+                    User.Role.PHARMACIST,
+                    User.Role.INVENTORY_STAFF,
+                )
+            ):
+                return Response(
+                    {
+                        "detail": "Only source facility staff can dispatch.",
+                        "code": "forbidden",
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        ser = TransferDispatchSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+
+        try:
+            transfer = dispatch_transfer(
+                transfer=transfer,
+                performed_by=user,
+                notes=ser.validated_data.get("notes", ""),
+            )
+        except TransferError as exc:
+            if "Cannot dispatch" in str(exc):
+                return _transfer_state_conflict(exc)
+            return _transfer_error_response(exc)
+
+        log_audit(
+            user,
+            "TRANSFER_DISPATCHED",
+            "TransferRequest",
+            transfer.id,
+            metadata={"quantity": transfer.quantity_approved},
+            ip_address=_ip(request),
+        )
+        return Response(TransferRequestSerializer(transfer).data)
+
+    # -------------------- Receive --------------------
+
+    @action(detail=True, methods=["post"], url_path="confirm-receipt")
+    def confirm_receipt(self, request, pk=None):
+        transfer = self.get_object()
+        user = request.user
+        is_central = user.role in (
+            User.Role.SYSTEM_ADMIN,
+            User.Role.CENTRAL_COORDINATOR,
+        )
+        if not is_central:
+            if not (
+                user.facility_id == transfer.destination_facility_id
+                and user.role
+                in (
+                    User.Role.FACILITY_MANAGER,
+                    User.Role.PHARMACIST,
+                    User.Role.INVENTORY_STAFF,
+                )
+            ):
+                return Response(
+                    {
+                        "detail": "Only destination facility staff can confirm receipt.",
+                        "code": "forbidden",
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        ser = TransferReceiptSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+
+        try:
+            transfer, dest_batch = receive_transfer(
+                transfer=transfer,
+                performed_by=user,
+                quantity_received=ser.validated_data["quantity_received"],
+                condition=ser.validated_data["condition"],
+                notes=ser.validated_data.get("notes", ""),
+            )
+        except TransferError as exc:
+            if "Cannot receive" in str(exc):
+                return _transfer_state_conflict(exc)
+            return _transfer_error_response(exc)
+
+        log_audit(
+            user,
+            "TRANSFER_RECEIVED",
+            "TransferRequest",
+            transfer.id,
+            metadata={
+                "quantity_received": transfer.quantity_received,
+                "condition": transfer.condition_on_receipt,
+                "destination_batch_id": dest_batch.id,
+            },
+            ip_address=_ip(request),
+        )
+
+        if transfer.quantity_received < transfer.quantity_approved:
+            log_audit(
+                user,
+                "TRANSFER_DISCREPANCY",
+                "TransferRequest",
+                transfer.id,
+                metadata={
+                    "approved": transfer.quantity_approved,
+                    "received": transfer.quantity_received,
+                    "delta": transfer.quantity_approved
+                    - transfer.quantity_received,
+                },
+                ip_address=_ip(request),
+            )
+
+        return Response(TransferRequestSerializer(transfer).data)
+
+    # -------------------- Cancel --------------------
+
+    @action(detail=True, methods=["post"])
+    def cancel(self, request, pk=None):
+        transfer = self.get_object()
+        user = request.user
+        is_central = user.role in (
+            User.Role.SYSTEM_ADMIN,
+            User.Role.CENTRAL_COORDINATOR,
+        )
+        if not is_central:
+            if not (
+                user.facility_id
+                in (transfer.source_facility_id, transfer.destination_facility_id)
+            ):
+                return Response(
+                    {"detail": "Not authorized.", "code": "forbidden"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        ser = TransferCancelSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+
+        try:
+            transfer = cancel_transfer(
+                transfer=transfer,
+                performed_by=user,
+                reason=ser.validated_data.get("reason", ""),
+            )
+        except TransferError as exc:
+            if "Cannot cancel" in str(exc):
+                return _transfer_state_conflict(exc)
+            return _transfer_error_response(exc)
+
+        log_audit(
+            user,
+            "TRANSFER_CANCELLED",
+            "TransferRequest",
+            transfer.id,
+            metadata={"reason": ser.validated_data.get("reason", "")},
+            ip_address=_ip(request),
+        )
+        return Response(TransferRequestSerializer(transfer).data)
+```
+
+Add `from django.db import models` near the top of `inventory/views.py` if not already imported. (The `get_queryset` uses `models.Q`.)
+
+## Step 12 — `inventory/urls.py`
+
+Add one line to `router.register`:
+
+```python
+router.register("transfers", TransferRequestViewSet, basename="transfer")
+```
+
+Update imports:
+
+```python
+from .views import (
+    EquipmentViewSet,
+    InventoryExpiringView,
+    InventoryShortagesView,
+    InventorySummaryView,
+    ProductViewSet,
+    StockAdjustmentView,
+    StockBatchViewSet,
+    StockConsumptionView,
+    StockMovementViewSet,
+    StockReceiptView,
+    StockWastageView,
+    TransferRequestViewSet,
+)
+```
+
+## Step 13 — `config/urls.py`
+
+Add one line (before `api/v1/` inventory include, order doesn't matter):
+
+```python
+    path("api/v1/", include("coordination.urls")),
+```
+
+## Step 14 — `inventory/admin.py` and `coordination/admin.py`
+
+Add to `inventory/admin.py`:
+
+```python
+from .models import TransferRequest
+
+@admin.register(TransferRequest)
+class TransferRequestAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "source_facility",
+        "destination_facility",
+        "product",
+        "quantity_requested",
+        "quantity_approved",
+        "status",
+        "priority",
+    )
+    list_filter = ("status", "priority", "source_facility", "destination_facility")
+    search_fields = ("product__name", "notes", "rejection_reason")
+```
+
+`coordination/admin.py`:
+
+```python
+from django.contrib import admin
+
+from .models import DeliveryCoordination, SupplyGapReport
+
+
+@admin.register(DeliveryCoordination)
+class DeliveryCoordinationAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "transfer_request",
+        "delivery_status",
+        "transport_payer",
+        "coordinator",
+        "created_at",
+    )
+    list_filter = ("delivery_status", "transport_payer")
+    search_fields = ("contact_person_name", "contact_phone", "notes")
+
+
+@admin.register(SupplyGapReport)
+class SupplyGapReportAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "facility",
+        "product",
+        "priority",
+        "uncovered_quantity",
+        "status",
+        "assigned_to",
+    )
+    list_filter = ("status", "priority")
+    search_fields = ("facility__name", "product__name", "reason_summary")
+```
+
+## Step 15 — Migrations
+
+```cmd
+python manage.py makemigrations inventory coordination
+python manage.py migrate
+```
+
+## Step 16 — Tests
+
+Append to **`inventory/tests.py`**:
+
+```python
+# ===========================================================================
+# M5 — Transfers
+# ===========================================================================
+
+from inventory.models import TransferRequest
+from inventory.transfers import TransferError
+
+
+def _mk_transfer_setup():
+    """Create F_A (source) and F_B (destination) each with a pharmacist and a batch."""
+    fa = _mk_facility("Source A")
+    fb = _mk_facility("Dest B")
+    pharm_a = _mk_user("pa_m5", User.Role.PHARMACIST, facility=fa)
+    pharm_b = _mk_user("pb_m5", User.Role.PHARMACIST, facility=fb)
+    mgr_a = _mk_user("mgra_m5", User.Role.FACILITY_MANAGER, facility=fa)
+    mgr_b = _mk_user("mgrb_m5", User.Role.FACILITY_MANAGER, facility=fb)
+    coord = _mk_user("coord_m5", User.Role.CENTRAL_COORDINATOR)
+    admin = _mk_user("admin_m5", User.Role.SYSTEM_ADMIN)
+    product = _mk_product("Transfer-Product")
+    _, batch_a, _ = receive_stock(
+        facility=fa,
+        product=product,
+        batch_number="TB-1",
+        expiry_date=date.today() + timedelta(days=180),
+        quantity=100,
+        performed_by=pharm_a,
+    )
+    return {
+        "fa": fa,
+        "fb": fb,
+        "pharm_a": pharm_a,
+        "pharm_b": pharm_b,
+        "mgr_a": mgr_a,
+        "mgr_b": mgr_b,
+        "coord": coord,
+        "admin": admin,
+        "product": product,
+        "batch_a": batch_a,
+    }
+
+
+class TransferCreateTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.s = _mk_transfer_setup()
+
+    def _payload(self, **over):
+        data = {
+            "source_facility": self.s["fa"].id,
+            "destination_facility": self.s["fb"].id,
+            "product": self.s["product"].id,
+            "source_batch": self.s["batch_a"].id,
+            "quantity_requested": 40,
+            "priority": "HIGH",
+        }
+        data.update(over)
+        return data
+
+    def test_facility_can_request_into_own_facility(self):
+        self.client.force_authenticate(self.s["pharm_b"])
+        r = self.client.post("/api/v1/transfers/", self._payload(), format="json")
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(r.data["status"], "REQUESTED")
+        self.assertEqual(TransferRequest.objects.count(), 1)
+
+    def test_facility_cannot_request_for_unrelated_facilities(self):
+        pharm_c = _mk_user("pc_m5", User.Role.PHARMACIST, facility=_mk_facility("C"))
+        self.client.force_authenticate(pharm_c)
+        r = self.client.post("/api/v1/transfers/", self._payload(), format="json")
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_central_can_create_any(self):
+        self.client.force_authenticate(self.s["coord"])
+        r = self.client.post("/api/v1/transfers/", self._payload(), format="json")
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+
+    def test_same_source_destination_rejected(self):
+        self.client.force_authenticate(self.s["coord"])
+        r = self.client.post(
+            "/api/v1/transfers/",
+            self._payload(destination_facility=self.s["fa"].id),
+            format="json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(r.data["code"], "transfer_error")
+
+    def test_batch_must_belong_to_source(self):
+        self.client.force_authenticate(self.s["coord"])
+        other_batch = StockBatch.objects.create(
+            facility=self.s["fb"],
+            product=self.s["product"],
+            batch_number="WRONG",
+            expiry_date=date.today() + timedelta(days=180),
+            quantity_available=10,
+        )
+        r = self.client.post(
+            "/api/v1/transfers/",
+            self._payload(source_batch=other_batch.id),
+            format="json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_quantity_over_free_stock_rejected(self):
+        self.client.force_authenticate(self.s["coord"])
+        r = self.client.post(
+            "/api/v1/transfers/",
+            self._payload(quantity_requested=999),
+            format="json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class TransferApproveRejectTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.s = _mk_transfer_setup()
+        self.transfer = TransferRequest.objects.create(
+            source_facility=self.s["fa"],
+            destination_facility=self.s["fb"],
+            product=self.s["product"],
+            source_batch=self.s["batch_a"],
+            quantity_requested=40,
+            priority="HIGH",
+            requested_by=self.s["pharm_b"],
+        )
+
+    def test_source_manager_approves_and_reserves(self):
+        self.client.force_authenticate(self.s["mgr_a"])
+        r = self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/approve/",
+            {"quantity_approved": 40},
+            format="json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data["status"], "APPROVED")
+        self.s["batch_a"].refresh_from_db()
+        self.assertEqual(self.s["batch_a"].quantity_reserved, 40)
+        self.assertEqual(self.s["batch_a"].quantity_available, 100)  # unchanged
+
+    def test_dest_manager_cannot_approve(self):
+        self.client.force_authenticate(self.s["mgr_b"])
+        r = self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/approve/", {}, format="json"
+        )
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_central_approves(self):
+        self.client.force_authenticate(self.s["coord"])
+        r = self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/approve/", {}, format="json"
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+
+    def test_approve_over_free_stock_fails(self):
+        self.client.force_authenticate(self.s["coord"])
+        # Approve 80 (leaves 20)
+        self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/approve/",
+            {"quantity_approved": 80},
+            format="json",
+        )
+        # Create a second transfer for 80 more
+        t2 = TransferRequest.objects.create(
+            source_facility=self.s["fa"],
+            destination_facility=self.s["fb"],
+            product=self.s["product"],
+            source_batch=self.s["batch_a"],
+            quantity_requested=80,
+            priority="MEDIUM",
+            requested_by=self.s["pharm_b"],
+        )
+        r = self.client.post(
+            f"/api/v1/transfers/{t2.id}/approve/",
+            {"quantity_approved": 80},
+            format="json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        # Reserved stays at 80
+        self.s["batch_a"].refresh_from_db()
+        self.assertEqual(self.s["batch_a"].quantity_reserved, 80)
+
+    def test_cannot_approve_twice(self):
+        self.client.force_authenticate(self.s["coord"])
+        self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/approve/", {}, format="json"
+        )
+        r = self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/approve/", {}, format="json"
+        )
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+
+    def test_reject_requires_reason(self):
+        self.client.force_authenticate(self.s["coord"])
+        r = self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/reject/", {}, format="json"
+        )
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_reject_succeeds(self):
+        self.client.force_authenticate(self.s["coord"])
+        r = self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/reject/",
+            {"rejection_reason": "Not urgent"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.transfer.refresh_from_db()
+        self.assertEqual(self.transfer.status, "REJECTED")
+        self.assertEqual(self.transfer.rejection_reason, "Not urgent")
+
+
+class TransferDispatchReceiptTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.s = _mk_transfer_setup()
+        self.transfer = TransferRequest.objects.create(
+            source_facility=self.s["fa"],
+            destination_facility=self.s["fb"],
+            product=self.s["product"],
+            source_batch=self.s["batch_a"],
+            quantity_requested=40,
+            priority="HIGH",
+            requested_by=self.s["pharm_b"],
+        )
+        self.client.force_authenticate(self.s["coord"])
+        self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/approve/",
+            {"quantity_approved": 40},
+            format="json",
+        )
+        self.transfer.refresh_from_db()
+
+    def test_dispatch_reduces_source_and_releases_reservation(self):
+        self.client.force_authenticate(self.s["pharm_a"])
+        r = self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/dispatch/",
+            {"notes": "Left at 9am"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data["status"], "DISPATCHED")
+        self.s["batch_a"].refresh_from_db()
+        self.assertEqual(self.s["batch_a"].quantity_available, 60)
+        self.assertEqual(self.s["batch_a"].quantity_reserved, 0)
+        mv = StockMovement.objects.filter(
+            movement_type="TRANSFER_OUT", reference_id=str(self.transfer.id)
+        ).first()
+        self.assertIsNotNone(mv)
+        self.assertEqual(mv.quantity, 40)
+        self.assertEqual(mv.direction, "OUT")
+
+    def test_dest_staff_cannot_dispatch(self):
+        self.client.force_authenticate(self.s["pharm_b"])
+        r = self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/dispatch/", {}, format="json"
+        )
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_dispatch_twice_conflicts(self):
+        self.client.force_authenticate(self.s["pharm_a"])
+        self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/dispatch/", {}, format="json"
+        )
+        r = self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/dispatch/", {}, format="json"
+        )
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+
+    def test_receipt_creates_destination_batch_and_movement(self):
+        self.client.force_authenticate(self.s["pharm_a"])
+        self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/dispatch/", {}, format="json"
+        )
+
+        self.client.force_authenticate(self.s["pharm_b"])
+        r = self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/confirm-receipt/",
+            {"quantity_received": 40, "condition": "OK"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data["status"], "RECEIVED")
+        dest_batch = StockBatch.objects.get(
+            facility=self.s["fb"], batch_number="TB-1"
+        )
+        self.assertEqual(dest_batch.quantity_available, 40)
+        self.assertEqual(dest_batch.expiry_date, self.s["batch_a"].expiry_date)
+        mv = StockMovement.objects.filter(
+            movement_type="TRANSFER_IN", reference_id=str(self.transfer.id)
+        ).first()
+        self.assertIsNotNone(mv)
+        self.assertEqual(mv.quantity, 40)
+
+    def test_receipt_with_damaged_quarantines_batch(self):
+        self.client.force_authenticate(self.s["pharm_a"])
+        self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/dispatch/", {}, format="json"
+        )
+        self.client.force_authenticate(self.s["pharm_b"])
+        self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/confirm-receipt/",
+            {"quantity_received": 40, "condition": "DAMAGED"},
+            format="json",
+        )
+        dest_batch = StockBatch.objects.get(
+            facility=self.s["fb"], batch_number="TB-1"
+        )
+        self.assertEqual(dest_batch.storage_status, "DAMAGED")
+
+    def test_short_receipt_creates_discrepancy_audit(self):
+        self.client.force_authenticate(self.s["pharm_a"])
+        self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/dispatch/", {}, format="json"
+        )
+        self.client.force_authenticate(self.s["pharm_b"])
+        r = self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/confirm-receipt/",
+            {"quantity_received": 35},
+            format="json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        dest_batch = StockBatch.objects.get(
+            facility=self.s["fb"], batch_number="TB-1"
+        )
+        self.assertEqual(dest_batch.quantity_available, 35)
+        self.assertTrue(
+            AuditLog.objects.filter(action="TRANSFER_DISCREPANCY").exists()
+        )
+
+    def test_receipt_over_approved_rejected(self):
+        self.client.force_authenticate(self.s["pharm_a"])
+        self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/dispatch/", {}, format="json"
+        )
+        self.client.force_authenticate(self.s["pharm_b"])
+        r = self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/confirm-receipt/",
+            {"quantity_received": 100},  # > 40 approved
+            format="json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_receipt_expiry_conflict_rejected(self):
+        # Pre-create a dest batch with the same batch_number but a different expiry
+        StockBatch.objects.create(
+            facility=self.s["fb"],
+            product=self.s["product"],
+            batch_number="TB-1",
+            expiry_date=date.today() + timedelta(days=365),
+            quantity_available=5,
+        )
+        self.client.force_authenticate(self.s["pharm_a"])
+        self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/dispatch/", {}, format="json"
+        )
+        self.client.force_authenticate(self.s["pharm_b"])
+        r = self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/confirm-receipt/",
+            {"quantity_received": 40},
+            format="json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class TransferCancelTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.s = _mk_transfer_setup()
+        self.transfer = TransferRequest.objects.create(
+            source_facility=self.s["fa"],
+            destination_facility=self.s["fb"],
+            product=self.s["product"],
+            source_batch=self.s["batch_a"],
+            quantity_requested=40,
+            priority="HIGH",
+            requested_by=self.s["pharm_b"],
+        )
+
+    def test_cancel_requested(self):
+        self.client.force_authenticate(self.s["coord"])
+        r = self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/cancel/",
+            {"reason": "Duplicate"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.transfer.refresh_from_db()
+        self.assertEqual(self.transfer.status, "CANCELLED")
+
+    def test_cancel_approved_releases_reservation(self):
+        self.client.force_authenticate(self.s["coord"])
+        self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/approve/", {}, format="json"
+        )
+        self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/cancel/", {}, format="json"
+        )
+        self.s["batch_a"].refresh_from_db()
+        self.assertEqual(self.s["batch_a"].quantity_reserved, 0)
+
+    def test_cannot_cancel_dispatched(self):
+        self.client.force_authenticate(self.s["coord"])
+        self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/approve/", {}, format="json"
+        )
+        self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/dispatch/", {}, format="json"
+        )
+        r = self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/cancel/", {}, format="json"
+        )
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+
+
+class TransferScopingTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.s = _mk_transfer_setup()
+        self.transfer = TransferRequest.objects.create(
+            source_facility=self.s["fa"],
+            destination_facility=self.s["fb"],
+            product=self.s["product"],
+            source_batch=self.s["batch_a"],
+            quantity_requested=40,
+            priority="HIGH",
+            requested_by=self.s["pharm_b"],
+        )
+
+    def test_source_pharmacist_sees_transfer(self):
+        self.client.force_authenticate(self.s["pharm_a"])
+        r = self.client.get(f"/api/v1/transfers/{self.transfer.id}/")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+
+    def test_unrelated_facility_cannot_see(self):
+        pharm_c = _mk_user("pc_sc", User.Role.PHARMACIST, facility=_mk_facility("C-Sc"))
+        self.client.force_authenticate(pharm_c)
+        r = self.client.get(f"/api/v1/transfers/{self.transfer.id}/")
+        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_central_sees_all(self):
+        self.client.force_authenticate(self.s["coord"])
+        r = self.client.get("/api/v1/transfers/")
+        self.assertEqual(r.data["count"], 1)
+
+
+# ===========================================================================
+# M5 — incoming_stock in inventory summary
+# ===========================================================================
+
+
+class IncomingStockIntegrationTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.s = _mk_transfer_setup()
+
+    def test_approved_transfer_shows_in_incoming(self):
+        # Approve a 40-unit transfer to B
+        self.client.force_authenticate(self.s["coord"])
+        t = TransferRequest.objects.create(
+            source_facility=self.s["fa"],
+            destination_facility=self.s["fb"],
+            product=self.s["product"],
+            source_batch=self.s["batch_a"],
+            quantity_requested=40,
+            priority="HIGH",
+            requested_by=self.s["pharm_b"],
+        )
+        self.client.post(
+            f"/api/v1/transfers/{t.id}/approve/",
+            {"quantity_approved": 40},
+            format="json",
+        )
+
+        # B's inventory summary should show 40 incoming
+        self.client.force_authenticate(self.s["coord"])
+        r = self.client.get(f"/api/v1/inventory/summary/?facility={self.s['fb'].id}")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        # Find our product's row
+        row = next(
+            (
+                it
+                for it in r.data["items"]
+                if it["product_id"] == self.s["product"].id
+            ),
+            None,
+        )
+        self.assertIsNotNone(row)
+        self.assertEqual(row["incoming_stock"], 40)
+```
+
+Append to **`coordination/tests.py`** (new file):
+
+```python
+from datetime import date, timedelta
+
+from django.test import TestCase
+from rest_framework import status
+from rest_framework.test import APIClient
+
+from accounts.models import AuditLog, User
+from coordination.models import DeliveryCoordination, SupplyGapReport
+from facilities.models import Facility
+from inventory.models import Product, StockBatch, TransferRequest
+from inventory.services import receive_stock
+
+
+def _mk_user(username, role, facility=None):
+    return User.objects.create_user(
+        username=username,
+        password="TestPass123!",
+        email=f"{username}@x.com",
+        role=role,
+        facility=facility,
+    )
+
+
+def _mk_facility(name="F"):
+    return Facility.objects.create(
+        name=name,
+        facility_type=Facility.FacilityType.CLINIC,
+        region="Addis Ababa",
+        status=Facility.Status.APPROVED,
+    )
+
+
+def _mk_product(name="Prod"):
+    return Product.objects.create(name=name, category="MEDICINE")
+
+
+class DeliveryCoordinationApiTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.fa = _mk_facility("A")
+        self.fb = _mk_facility("B")
+        self.fc = _mk_facility("C")
+        self.pharm_a = _mk_user("pa", User.Role.PHARMACIST, facility=self.fa)
+        self.pharm_b = _mk_user("pb", User.Role.PHARMACIST, facility=self.fb)
+        self.pharm_c = _mk_user("pc", User.Role.PHARMACIST, facility=self.fc)
+        self.coord = _mk_user("coord", User.Role.CENTRAL_COORDINATOR)
+        self.product = _mk_product()
+        _, self.batch_a, _ = receive_stock(
+            facility=self.fa,
+            product=self.product,
+            batch_number="B1",
+            expiry_date=date.today() + timedelta(days=180),
+            quantity=100,
+            performed_by=self.pharm_a,
+        )
+        self.transfer = TransferRequest.objects.create(
+            source_facility=self.fa,
+            destination_facility=self.fb,
+            product=self.product,
+            source_batch=self.batch_a,
+            quantity_requested=40,
+            priority="HIGH",
+            requested_by=self.pharm_b,
+        )
+
+    def _payload(self, **over):
+        data = {
+            "transport_method": "pickup",
+            "transport_provider": "Local carrier",
+            "contact_person_name": "Abebe",
+            "contact_phone": "+251911111111",
+            "transport_payer": "CENTRAL",
+            "estimated_cost": "500.00",
+            "delivery_status": "ARRANGED_BY_PHONE",
+        }
+        data.update(over)
+        return data
+
+    def test_coordinator_creates_entry(self):
+        self.client.force_authenticate(self.coord)
+        r = self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/delivery-coordination/",
+            self._payload(),
+            format="json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(r.data["delivery_status"], "ARRANGED_BY_PHONE")
+        self.assertEqual(r.data["transport_payer"], "CENTRAL")
+        self.assertTrue(
+            AuditLog.objects.filter(action="DELIVERY_COORDINATION_CREATED").exists()
+        )
+
+    def test_source_pharmacist_can_create(self):
+        self.client.force_authenticate(self.pharm_a)
+        r = self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/delivery-coordination/",
+            self._payload(),
+            format="json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+
+    def test_dest_pharmacist_can_create(self):
+        self.client.force_authenticate(self.pharm_b)
+        r = self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/delivery-coordination/",
+            self._payload(),
+            format="json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+
+    def test_unrelated_pharmacist_blocked(self):
+        self.client.force_authenticate(self.pharm_c)
+        r = self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/delivery-coordination/",
+            self._payload(),
+            format="json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_list_returns_all_calls(self):
+        self.client.force_authenticate(self.coord)
+        self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/delivery-coordination/",
+            self._payload(),
+            format="json",
+        )
+        self.client.post(
+            f"/api/v1/transfers/{self.transfer.id}/delivery-coordination/",
+            self._payload(notes="Called again"),
+            format="json",
+        )
+        r = self.client.get(
+            f"/api/v1/transfers/{self.transfer.id}/delivery-coordination/"
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data["count"], 2)
+
+
+class SupplyGapApiTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.fac = _mk_facility("Home")
+        self.pharm = _mk_user("pharm", User.Role.PHARMACIST, facility=self.fac)
+        self.coord = _mk_user("coord", User.Role.CENTRAL_COORDINATOR)
+        self.admin = _mk_user("admin", User.Role.SYSTEM_ADMIN)
+        self.product = _mk_product("Short-Product")
+
+        _, self.batch, _ = receive_stock(
+            facility=self.fac,
+            product=self.product,
+            batch_number="SP-1",
+            expiry_date=date.today() + timedelta(days=180),
+            quantity=100,
+            performed_by=self.pharm,
+        )
+        # Burn down usage so there is a real shortage
+        from inventory.services import consume_stock
+
+        consume_stock(batch=self.batch, quantity=90, performed_by=self.pharm)
+        # 10 usable, 3/day * 30 = 90 demand → gap 80
+
+    def test_non_central_cannot_list(self):
+        self.client.force_authenticate(self.pharm)
+        r = self.client.get("/api/v1/central/supply-gaps/")
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_refresh_creates_gaps(self):
+        self.client.force_authenticate(self.coord)
+        r = self.client.post("/api/v1/central/supply-gaps/refresh/")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(r.data["created"], 1)
+        self.assertGreaterEqual(r.data["active_count"], 1)
+        report = SupplyGapReport.objects.filter(facility=self.fac).first()
+        self.assertIsNotNone(report)
+        self.assertEqual(report.status, "OPEN")
+        self.assertGreater(report.uncovered_quantity, 0)
+
+    def test_refresh_updates_existing(self):
+        self.client.force_authenticate(self.coord)
+        self.client.post("/api/v1/central/supply-gaps/refresh/")
+        first_count = SupplyGapReport.objects.count()
+        self.client.post("/api/v1/central/supply-gaps/refresh/")
+        self.assertEqual(SupplyGapReport.objects.count(), first_count)
+
+    def test_refresh_only_affects_specified_facility(self):
+        other_fac = _mk_facility("Other")
+        _, other_batch, _ = receive_stock(
+            facility=other_fac,
+            product=self.product,
+            batch_number="SP-O",
+            expiry_date=date.today() + timedelta(days=180),
+            quantity=5,
+            performed_by=_mk_user("pother", User.Role.PHARMACIST, facility=other_fac),
+        )
+        from inventory.services import consume_stock
+
+        consume_stock(batch=other_batch, quantity=3, performed_by=self.pharm)
+
+        self.client.force_authenticate(self.coord)
+        self.client.post(
+            f"/api/v1/central/supply-gaps/refresh/?facility={self.fac.id}"
+        )
+        self.assertTrue(
+            SupplyGapReport.objects.filter(facility=self.fac).exists()
+        )
+        self.assertFalse(
+            SupplyGapReport.objects.filter(facility=other_fac).exists()
+        )
+
+    def test_assign(self):
+        self.client.force_authenticate(self.coord)
+        self.client.post("/api/v1/central/supply-gaps/refresh/")
+        gap = SupplyGapReport.objects.filter(facility=self.fac).first()
+        self.assertIsNotNone(gap)
+        r = self.client.post(
+            f"/api/v1/central/supply-gaps/{gap.id}/assign/",
+            {"assigned_to": self.coord.id, "note": "Will coordinate"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        gap.refresh_from_db()
+        self.assertEqual(gap.status, "ASSIGNED")
+        self.assertEqual(gap.assigned_to, self.coord)
+
+    def test_escalate(self):
+        self.client.force_authenticate(self.coord)
+        self.client.post("/api/v1/central/supply-gaps/refresh/")
+        gap = SupplyGapReport.objects.filter(facility=self.fac).first()
+        r = self.client.post(
+            f"/api/v1/central/supply-gaps/{gap.id}/escalate/",
+            {"note": "Beyond redistribution"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        gap.refresh_from_db()
+        self.assertEqual(gap.status, "ESCALATED")
+
+    def test_cannot_escalate_twice(self):
+        self.client.force_authenticate(self.coord)
+        self.client.post("/api/v1/central/supply-gaps/refresh/")
+        gap = SupplyGapReport.objects.filter(facility=self.fac).first()
+        self.client.post(f"/api/v1/central/supply-gaps/{gap.id}/escalate/", {}, format="json")
+        r = self.client.post(f"/api/v1/central/supply-gaps/{gap.id}/escalate/", {}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+
+    def test_resolve(self):
+        self.client.force_authenticate(self.coord)
+        self.client.post("/api/v1/central/supply-gaps/refresh/")
+        gap = SupplyGapReport.objects.filter(facility=self.fac).first()
+        r = self.client.post(
+            f"/api/v1/central/supply-gaps/{gap.id}/resolve/",
+            {"resolution_notes": "Delivered from central warehouse"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        gap.refresh_from_db()
+        self.assertEqual(gap.status, "RESOLVED")
+        self.assertIsNotNone(gap.resolved_at)
+
+    def test_refresh_after_resolve_creates_new_report(self):
+        self.client.force_authenticate(self.coord)
+        self.client.post("/api/v1/central/supply-gaps/refresh/")
+        gap = SupplyGapReport.objects.filter(facility=self.fac).first()
+        self.client.post(
+            f"/api/v1/central/supply-gaps/{gap.id}/resolve/",
+            {"resolution_notes": "Done"},
+            format="json",
+        )
+        # The shortage still exists in reality — refresh should create a new report
+        self.client.post("/api/v1/central/supply-gaps/refresh/")
+        active = SupplyGapReport.objects.filter(
+            facility=self.fac,
+            status__in=SupplyGapReport.NON_TERMINAL_STATUSES,
+        )
+        self.assertEqual(active.count(), 1)
+        self.assertNotEqual(active.first().id, gap.id)
+
+    def test_admin_can_access(self):
+        self.client.force_authenticate(self.admin)
+        r = self.client.get("/api/v1/central/supply-gaps/")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+
+
+class SupplyGapPriorityTests(TestCase):
+    def _mk_and_consume(self, quantity_received, quantity_consumed):
+        fac = _mk_facility(f"P{quantity_received}")
+        pharm = _mk_user(f"p{quantity_received}", User.Role.PHARMACIST, facility=fac)
+        product = _mk_product(f"Pr{quantity_received}")
+        _, batch, _ = receive_stock(
+            facility=fac,
+            product=product,
+            batch_number="PX",
+            expiry_date=date.today() + timedelta(days=180),
+            quantity=quantity_received,
+            performed_by=pharm,
+        )
+        from inventory.services import consume_stock
+
+        if quantity_consumed > 0:
+            consume_stock(
+                batch=batch, quantity=quantity_consumed, performed_by=pharm
+            )
+        return fac, product
+
+    def test_critical_when_days_of_stock_under_7(self):
+        # 3/day usage, 15 stock → 5 days
+        fac, product = self._mk_and_consume(45, 30)
+        from coordination.services import upsert_supply_gap
+
+        report, _ = upsert_supply_gap(facility=fac, product=product)
+        self.assertIsNotNone(report)
+        self.assertEqual(report.priority, "CRITICAL")
+```
+
+## Step 17 — Migrations + tests
+
+```cmd
+python manage.py makemigrations inventory coordination
+python manage.py migrate
+python manage.py test
+```
+
+Expected: **~155 tests green** (110 from M1–M4 + ~45 from M5).
+
+## Step 18 — Postman smoke tests
+
+Restart server. Variables: `base`, `admin_token`, `coord_token`, `pa_token` (pharmacist at facility A = source), `pb_token` (pharmacist at facility B = destination), `pa_fac`, `pb_fac`.
+
+| # | Request | Expected |
+|---|---|---|
+| 1 | Ensure facility A has a batch with stock (from M3/M4) | — |
+| 2 | **Pharmacist B requests transfer** — `POST {{base}}/transfers/` body `{ "source_facility": {{pa_fac}}, "destination_facility": {{pb_fac}}, "product": 1, "source_batch": <batch_id>, "quantity_requested": 30, "priority": "HIGH" }` with `{{pb_token}}` | `201`, `status=REQUESTED` |
+| 3 | Same as a Pharmacist at unrelated facility C | `403` |
+| 4 | **Approve as source manager** — `POST {{base}}/transfers/<id>/approve/` body `{ "quantity_approved": 30 }` with source facility manager token | `200`, `status=APPROVED` |
+| 5 | Source batch `GET {{base}}/batches/<id>/` | `quantity_available` unchanged, `quantity_reserved=30` |
+| 6 | Approve twice | `409`, `code=invalid_state` |
+| 7 | **Dispatch as source pharmacist** — `POST {{base}}/transfers/<id>/dispatch/` | `200`, `status=DISPATCHED`, source batch `quantity_available` dropped by 30, `quantity_reserved=0` |
+| 8 | `GET {{base}}/stock-movements/?movement_type=TRANSFER_OUT` | `200`, new OUT movement |
+| 9 | **Record delivery coordination** — `POST {{base}}/transfers/<id>/delivery-coordination/` with `{{coord_token}}` body `{ "transport_method":"pickup", "contact_person_name":"Abebe", "contact_phone":"+251911...", "transport_payer":"CENTRAL", "estimated_cost":"500.00", "delivery_status":"ARRANGED_BY_PHONE" }` | `201` |
+| 10 | Add another call entry | `201`, list grows |
+| 11 | **Receive as destination pharmacist** — `POST {{base}}/transfers/<id>/confirm-receipt/` body `{ "quantity_received": 30, "condition": "OK" }` with `{{pb_token}}` | `200`, `status=RECEIVED` |
+| 12 | Destination batch exists with `quantity_available=30` | `200` |
+| 13 | `GET {{base}}/stock-movements/?movement_type=TRANSFER_IN` | new IN movement at destination |
+| 14 | **Cancel path** — new transfer, approve, then `POST {{base}}/transfers/<new_id>/cancel/` | `200`, `status=CANCELLED`, reservation released |
+| 15 | Cancel dispatched transfer | `409` |
+| 16 | **Shortage → supply gap** — `POST {{base}}/central/supply-gaps/refresh/` with `{{coord_token}}` | `200`, `created>=1`, `gaps` array |
+| 17 | Refresh again | `200`, `created=0`, `updated>=1` |
+| 18 | **Assign gap** — `POST {{base}}/central/supply-gaps/<id>/assign/` body `{ "assigned_to": <coord_id> }` | `200`, `status=ASSIGNED` |
+| 19 | **Escalate** — `POST {{base}}/central/supply-gaps/<id>/escalate/` body `{ "note":"Beyond redistribution" }` | `200`, `status=ESCALATED` |
+| 20 | **Resolve** — `POST {{base}}/central/supply-gaps/<id>/resolve/` body `{ "resolution_notes":"Delivered" }` | `200`, `status=RESOLVED`, `resolved_at` set |
+| 21 | `POST {{base}}/central/supply-gaps/refresh/` again | new report created (old one still `RESOLVED`) |
+| 22 | Facility user calls any `/central/supply-gaps/*` | `403` |
+| 23 | **Incoming stock** — before receipt, `GET {{base}}/inventory/summary/?facility={{pb_fac}}` (as coord) | destination's product shows `incoming_stock=30` |
+| 24 | After receipt, same call | `usable_stock` increased by 30, `incoming_stock` back to 0 |
+| 25 | Open Django admin → **Transfer requests** | All transfers, statuses visible, no manual edit buttons |
+
+## Step 19 — What was intentionally NOT built in M5
+
+- No `TransferItem` — one product/batch per transfer in MVP (docs explicitly allow this).
+- No **auto-triggered supply gap refresh** — `POST /central/supply-gaps/refresh/` is explicit. M8's AI summarizer will call `refresh_supply_gaps()` internally.
+- No **OSRM routing integration** — `expected_arrival_at` is set by the coordinator manually or via a future routing provider. Docs §4.2 say routing is an estimate; not required for the state machine.
+- No **email/SMS notification** — deferred per docs.
+- No **reservation release on `EXPIRED` batch** — if a batch expires while reserved, the next `dispatch` will fail the `is_usable()` check. Acceptable for MVP.
+- No **partial-quantity shipping** — dispatch always ships `quantity_approved`; receipt may be less but never more.
+- No **driver entity** — coordination is a call log only.
+- No **cross-transfer batching** — one route per transfer.
+- **Deviation from literal API list**: I added `POST /central/supply-gaps/refresh/` (not in the docs list) as the mechanism to (re)generate reports deterministically without AI. Without it there'd be no way to populate the table for the MVP demo — the alternative would be a background job we don't have. Documented here.
+
+## Checkpoint — confirm before moving to M6
+
+- [ ] `python manage.py test` → all green (~155)
+- [ ] Postman #1–#25 pass
+- [ ] A full happy-path transfer (REQUESTED → APPROVED → DISPATCHED → RECEIVED) produces exactly 2 ledger movements: `TRANSFER_OUT` at source, `TRANSFER_IN` at destination
+- [ ] Source batch `quantity_available` reflects the loss; destination batch shows the gain
+- [ ] Reservation is created on approve and released on dispatch/cancel
+- [ ] Short receipt creates a `TRANSFER_DISCREPANCY` audit entry but still moves the actual received quantity
+- [ ] Damaged receipt quarantines the destination batch
+- [ ] `incoming_stock` reflects approved-and-not-yet-received transfers
+- [ ] Facility C user gets 404 on facility A↔B transfers (no IDOR leak)
+- [ ] `refresh` is idempotent per (facility, product) and creates a new report after the previous one was resolved
+
+Reply with a thumbs-up (or paste any error), and I'll deliver **Milestone 6 — Vaccinations**: `Patient`, `VaccineSchedule`, `VaccinationRecord`, `VaccineFollowUp`, due/overdue endpoints, and the follow-up-driven demand projection that plugs into the M4 `projected_demand`.

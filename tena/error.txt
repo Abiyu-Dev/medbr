@@ -1,0 +1,1459 @@
+C:\practice\drf\tena>python manage.py test
+Found 198 test(s).
+Creating test database for alias 'default'...
+System check identified no issues (0 silenced).
+.............EEEEE.EEE.EEEEEF..........................................................................E................................................................EEEEEEEEEEEEEEEEEEEEEEEEEEE...
+======================================================================
+ERROR: test_coordinator_creates_entry (coordination.tests.DeliveryCoordinationApiTests.test_coordinator_creates_entry)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\coordination\tests.py", line 56, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_dest_pharmacist_can_create (coordination.tests.DeliveryCoordinationApiTests.test_dest_pharmacist_can_create)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\coordination\tests.py", line 56, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_list_returns_all_calls (coordination.tests.DeliveryCoordinationApiTests.test_list_returns_all_calls)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\coordination\tests.py", line 56, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_source_pharmacist_can_create (coordination.tests.DeliveryCoordinationApiTests.test_source_pharmacist_can_create)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\coordination\tests.py", line 56, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_unrelated_pharmacist_blocked (coordination.tests.DeliveryCoordinationApiTests.test_unrelated_pharmacist_blocked)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\coordination\tests.py", line 56, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_assign (coordination.tests.SupplyGapApiTests.test_assign)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\coordination\tests.py", line 212, in test_assign
+    self.client.post("/api/v1/central/supply-gaps/refresh/")
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 302, in post
+    response = super().post(
+               ^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 216, in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 240, in generic
+    return super().generic(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 671, in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 292, in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 244, in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 1090, in request
+    self.check_exception(response)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 805, in check_exception
+    raise exc_value
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\viewsets.py", line 124, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 526, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 474, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 485, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 523, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\practice\drf\tena\coordination\views.py", line 171, in refresh
+    "gaps": SupplyGapReportSerializer(active, many=True).data,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 806, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 249, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 724, in to_representation
+    return [
+           ^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 725, in <listcomp>
+    self.child.to_representation(item) for item in iterable
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 535, in to_representation
+    for field in fields:
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 396, in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 384, in fields
+    for key, value in self.get_fields().items():
+                      ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 1102, in get_fields
+    extra_kwargs = self.get_extra_kwargs()
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 1432, in get_extra_kwargs
+    raise TypeError(
+TypeError: The `read_only_fields` option must be a list or tuple. Got str.
+
+======================================================================
+ERROR: test_cannot_escalate_twice (coordination.tests.SupplyGapApiTests.test_cannot_escalate_twice)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\coordination\tests.py", line 240, in test_cannot_escalate_twice
+    self.client.post("/api/v1/central/supply-gaps/refresh/")
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 302, in post
+    response = super().post(
+               ^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 216, in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 240, in generic
+    return super().generic(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 671, in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 292, in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 244, in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 1090, in request
+    self.check_exception(response)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 805, in check_exception
+    raise exc_value
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\viewsets.py", line 124, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 526, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 474, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 485, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 523, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\practice\drf\tena\coordination\views.py", line 171, in refresh
+    "gaps": SupplyGapReportSerializer(active, many=True).data,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 806, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 249, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 724, in to_representation
+    return [
+           ^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 725, in <listcomp>
+    self.child.to_representation(item) for item in iterable
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 535, in to_representation
+    for field in fields:
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 396, in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 384, in fields
+    for key, value in self.get_fields().items():
+                      ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 1102, in get_fields
+    extra_kwargs = self.get_extra_kwargs()
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 1432, in get_extra_kwargs
+    raise TypeError(
+TypeError: The `read_only_fields` option must be a list or tuple. Got str.
+
+======================================================================
+ERROR: test_escalate (coordination.tests.SupplyGapApiTests.test_escalate)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\coordination\tests.py", line 227, in test_escalate
+    self.client.post("/api/v1/central/supply-gaps/refresh/")
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 302, in post
+    response = super().post(
+               ^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 216, in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 240, in generic
+    return super().generic(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 671, in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 292, in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 244, in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 1090, in request
+    self.check_exception(response)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 805, in check_exception
+    raise exc_value
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\viewsets.py", line 124, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 526, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 474, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 485, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 523, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\practice\drf\tena\coordination\views.py", line 171, in refresh
+    "gaps": SupplyGapReportSerializer(active, many=True).data,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 806, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 249, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 724, in to_representation
+    return [
+           ^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 725, in <listcomp>
+    self.child.to_representation(item) for item in iterable
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 535, in to_representation
+    for field in fields:
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 396, in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 384, in fields
+    for key, value in self.get_fields().items():
+                      ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 1102, in get_fields
+    extra_kwargs = self.get_extra_kwargs()
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 1432, in get_extra_kwargs
+    raise TypeError(
+TypeError: The `read_only_fields` option must be a list or tuple. Got str.
+
+======================================================================
+ERROR: test_refresh_after_resolve_creates_new_report (coordination.tests.SupplyGapApiTests.test_refresh_after_resolve_creates_new_report)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\coordination\tests.py", line 262, in test_refresh_after_resolve_creates_new_report
+    self.client.post("/api/v1/central/supply-gaps/refresh/")
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 302, in post
+    response = super().post(
+               ^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 216, in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 240, in generic
+    return super().generic(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 671, in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 292, in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 244, in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 1090, in request
+    self.check_exception(response)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 805, in check_exception
+    raise exc_value
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\viewsets.py", line 124, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 526, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 474, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 485, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 523, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\practice\drf\tena\coordination\views.py", line 171, in refresh
+    "gaps": SupplyGapReportSerializer(active, many=True).data,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 806, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 249, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 724, in to_representation
+    return [
+           ^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 725, in <listcomp>
+    self.child.to_representation(item) for item in iterable
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 535, in to_representation
+    for field in fields:
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 396, in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 384, in fields
+    for key, value in self.get_fields().items():
+                      ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 1102, in get_fields
+    extra_kwargs = self.get_extra_kwargs()
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 1432, in get_extra_kwargs
+    raise TypeError(
+TypeError: The `read_only_fields` option must be a list or tuple. Got str.
+
+======================================================================
+ERROR: test_refresh_creates_gaps (coordination.tests.SupplyGapApiTests.test_refresh_creates_gaps)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\coordination\tests.py", line 169, in test_refresh_creates_gaps
+    r = self.client.post("/api/v1/central/supply-gaps/refresh/")
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 302, in post
+    response = super().post(
+               ^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 216, in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 240, in generic
+    return super().generic(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 671, in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 292, in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 244, in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 1090, in request
+    self.check_exception(response)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 805, in check_exception
+    raise exc_value
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\viewsets.py", line 124, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 526, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 474, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 485, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 523, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\practice\drf\tena\coordination\views.py", line 171, in refresh
+    "gaps": SupplyGapReportSerializer(active, many=True).data,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 806, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 249, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 724, in to_representation
+    return [
+           ^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 725, in <listcomp>
+    self.child.to_representation(item) for item in iterable
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 535, in to_representation
+    for field in fields:
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 396, in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 384, in fields
+    for key, value in self.get_fields().items():
+                      ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 1102, in get_fields
+    extra_kwargs = self.get_extra_kwargs()
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 1432, in get_extra_kwargs
+    raise TypeError(
+TypeError: The `read_only_fields` option must be a list or tuple. Got str.
+
+======================================================================
+ERROR: test_refresh_only_affects_specified_facility (coordination.tests.SupplyGapApiTests.test_refresh_only_affects_specified_facility)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\coordination\tests.py", line 197, in test_refresh_only_affects_specified_facility
+    consume_stock(batch=other_batch, quantity=3, performed_by=self.pharm)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 81, in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\practice\drf\tena\inventory\services.py", line 124, in consume_stock
+    locked = StockBatch.objects.select_for_update().get(pk=batch.pk)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 635, in get
+    raise self.model.DoesNotExist(
+inventory.models.StockBatch.DoesNotExist: StockBatch matching query does not exist.
+
+======================================================================
+ERROR: test_refresh_updates_existing (coordination.tests.SupplyGapApiTests.test_refresh_updates_existing)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\coordination\tests.py", line 180, in test_refresh_updates_existing
+    self.client.post("/api/v1/central/supply-gaps/refresh/")
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 302, in post
+    response = super().post(
+               ^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 216, in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 240, in generic
+    return super().generic(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 671, in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 292, in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 244, in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 1090, in request
+    self.check_exception(response)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 805, in check_exception
+    raise exc_value
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\viewsets.py", line 124, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 526, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 474, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 485, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 523, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\practice\drf\tena\coordination\views.py", line 171, in refresh
+    "gaps": SupplyGapReportSerializer(active, many=True).data,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 806, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 249, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 724, in to_representation
+    return [
+           ^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 725, in <listcomp>
+    self.child.to_representation(item) for item in iterable
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 535, in to_representation
+    for field in fields:
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 396, in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 384, in fields
+    for key, value in self.get_fields().items():
+                      ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 1102, in get_fields
+    extra_kwargs = self.get_extra_kwargs()
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 1432, in get_extra_kwargs
+    raise TypeError(
+TypeError: The `read_only_fields` option must be a list or tuple. Got str.
+
+======================================================================
+ERROR: test_resolve (coordination.tests.SupplyGapApiTests.test_resolve)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\coordination\tests.py", line 248, in test_resolve
+    self.client.post("/api/v1/central/supply-gaps/refresh/")
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 302, in post
+    response = super().post(
+               ^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 216, in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 240, in generic
+    return super().generic(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 671, in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 292, in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 244, in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 1090, in request
+    self.check_exception(response)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 805, in check_exception
+    raise exc_value
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\viewsets.py", line 124, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 526, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 474, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 485, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\views.py", line 523, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\practice\drf\tena\coordination\views.py", line 171, in refresh
+    "gaps": SupplyGapReportSerializer(active, many=True).data,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 806, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 249, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 724, in to_representation
+    return [
+           ^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 725, in <listcomp>
+    self.child.to_representation(item) for item in iterable
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 535, in to_representation
+    for field in fields:
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 396, in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 384, in fields
+    for key, value in self.get_fields().items():
+                      ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 1102, in get_fields
+    extra_kwargs = self.get_extra_kwargs()
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\serializers.py", line 1432, in get_extra_kwargs
+    raise TypeError(
+TypeError: The `read_only_fields` option must be a list or tuple. Got str.
+
+======================================================================
+ERROR: test_approved_transfer_shows_in_incoming (inventory.tests.IncomingStockIntegrationTests.test_approved_transfer_shows_in_incoming)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1744, in test_approved_transfer_shows_in_incoming
+    t = TransferRequest.objects.create(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_approve_over_free_stock_fails (inventory.tests.TransferApproveRejectTests.test_approve_over_free_stock_fails)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1402, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_cannot_approve_twice (inventory.tests.TransferApproveRejectTests.test_cannot_approve_twice)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1402, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_central_approves (inventory.tests.TransferApproveRejectTests.test_central_approves)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1402, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_dest_manager_cannot_approve (inventory.tests.TransferApproveRejectTests.test_dest_manager_cannot_approve)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1402, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_reject_requires_reason (inventory.tests.TransferApproveRejectTests.test_reject_requires_reason)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1402, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_reject_succeeds (inventory.tests.TransferApproveRejectTests.test_reject_succeeds)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1402, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_source_manager_approves_and_reserves (inventory.tests.TransferApproveRejectTests.test_source_manager_approves_and_reserves)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1402, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_cancel_approved_releases_reservation (inventory.tests.TransferCancelTests.test_cancel_approved_releases_reservation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1654, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_cancel_requested (inventory.tests.TransferCancelTests.test_cancel_requested)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1654, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_cannot_cancel_dispatched (inventory.tests.TransferCancelTests.test_cannot_cancel_dispatched)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1654, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_batch_must_belong_to_source (inventory.tests.TransferCreateTests.test_batch_must_belong_to_source)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1381, in test_batch_must_belong_to_source
+    r = self.client.post(
+        ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 302, in post
+    response = super().post(
+               ^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 216, in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 240, in generic
+    return super().generic(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 671, in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 292, in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 244, in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 1090, in request
+    self.check_exception(response)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 805, in check_exception
+    raise exc_value
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\viewsets.py", line 124, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\practice\drf\tena\inventory\views.py", line 808, in dispatch
+    transfer = self.get_object()
+               ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\generics.py", line 87, in get_object
+    queryset = self.filter_queryset(self.get_queryset())
+                                    ^^^^^^^^^^^^^^^^^^^
+  File "C:\practice\drf\tena\inventory\views.py", line 629, in get_queryset
+    if user.role in (User.Role.SYSTEM_ADMIN, User.Role.CENTRAL_COORDINATOR):
+       ^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\utils\functional.py", line 253, in inner
+    return func(_wrapped, *args)
+           ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'AnonymousUser' object has no attribute 'role'
+
+======================================================================
+ERROR: test_central_can_create_any (inventory.tests.TransferCreateTests.test_central_can_create_any)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1359, in test_central_can_create_any
+    r = self.client.post("/api/v1/transfers/", self._payload(), format="json")
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 302, in post
+    response = super().post(
+               ^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 216, in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 240, in generic
+    return super().generic(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 671, in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 292, in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 244, in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 1090, in request
+    self.check_exception(response)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 805, in check_exception
+    raise exc_value
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\viewsets.py", line 124, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\practice\drf\tena\inventory\views.py", line 808, in dispatch
+    transfer = self.get_object()
+               ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\generics.py", line 87, in get_object
+    queryset = self.filter_queryset(self.get_queryset())
+                                    ^^^^^^^^^^^^^^^^^^^
+  File "C:\practice\drf\tena\inventory\views.py", line 629, in get_queryset
+    if user.role in (User.Role.SYSTEM_ADMIN, User.Role.CENTRAL_COORDINATOR):
+       ^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\utils\functional.py", line 253, in inner
+    return func(_wrapped, *args)
+           ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'AnonymousUser' object has no attribute 'role'
+
+======================================================================
+ERROR: test_facility_can_request_into_own_facility (inventory.tests.TransferCreateTests.test_facility_can_request_into_own_facility)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1346, in test_facility_can_request_into_own_facility
+    r = self.client.post("/api/v1/transfers/", self._payload(), format="json")
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 302, in post
+    response = super().post(
+               ^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 216, in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 240, in generic
+    return super().generic(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 671, in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 292, in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 244, in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 1090, in request
+    self.check_exception(response)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 805, in check_exception
+    raise exc_value
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\viewsets.py", line 124, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\practice\drf\tena\inventory\views.py", line 808, in dispatch
+    transfer = self.get_object()
+               ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\generics.py", line 87, in get_object
+    queryset = self.filter_queryset(self.get_queryset())
+                                    ^^^^^^^^^^^^^^^^^^^
+  File "C:\practice\drf\tena\inventory\views.py", line 629, in get_queryset
+    if user.role in (User.Role.SYSTEM_ADMIN, User.Role.CENTRAL_COORDINATOR):
+       ^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\utils\functional.py", line 253, in inner
+    return func(_wrapped, *args)
+           ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'AnonymousUser' object has no attribute 'role'
+
+======================================================================
+ERROR: test_facility_cannot_request_for_unrelated_facilities (inventory.tests.TransferCreateTests.test_facility_cannot_request_for_unrelated_facilities)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1354, in test_facility_cannot_request_for_unrelated_facilities
+    r = self.client.post("/api/v1/transfers/", self._payload(), format="json")
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 302, in post
+    response = super().post(
+               ^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 216, in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 240, in generic
+    return super().generic(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 671, in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 292, in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 244, in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 1090, in request
+    self.check_exception(response)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 805, in check_exception
+    raise exc_value
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\viewsets.py", line 124, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\practice\drf\tena\inventory\views.py", line 808, in dispatch
+    transfer = self.get_object()
+               ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\generics.py", line 87, in get_object
+    queryset = self.filter_queryset(self.get_queryset())
+                                    ^^^^^^^^^^^^^^^^^^^
+  File "C:\practice\drf\tena\inventory\views.py", line 629, in get_queryset
+    if user.role in (User.Role.SYSTEM_ADMIN, User.Role.CENTRAL_COORDINATOR):
+       ^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\utils\functional.py", line 253, in inner
+    return func(_wrapped, *args)
+           ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'AnonymousUser' object has no attribute 'role'
+
+======================================================================
+ERROR: test_quantity_over_free_stock_rejected (inventory.tests.TransferCreateTests.test_quantity_over_free_stock_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1390, in test_quantity_over_free_stock_rejected
+    r = self.client.post(
+        ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 302, in post
+    response = super().post(
+               ^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 216, in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 240, in generic
+    return super().generic(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 671, in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 292, in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 244, in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 1090, in request
+    self.check_exception(response)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 805, in check_exception
+    raise exc_value
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\viewsets.py", line 124, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\practice\drf\tena\inventory\views.py", line 808, in dispatch
+    transfer = self.get_object()
+               ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\generics.py", line 87, in get_object
+    queryset = self.filter_queryset(self.get_queryset())
+                                    ^^^^^^^^^^^^^^^^^^^
+  File "C:\practice\drf\tena\inventory\views.py", line 629, in get_queryset
+    if user.role in (User.Role.SYSTEM_ADMIN, User.Role.CENTRAL_COORDINATOR):
+       ^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\utils\functional.py", line 253, in inner
+    return func(_wrapped, *args)
+           ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'AnonymousUser' object has no attribute 'role'
+
+======================================================================
+ERROR: test_same_source_destination_rejected (inventory.tests.TransferCreateTests.test_same_source_destination_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1364, in test_same_source_destination_rejected
+    r = self.client.post(
+        ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 302, in post
+    response = super().post(
+               ^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 216, in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 240, in generic
+    return super().generic(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 671, in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 292, in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\test.py", line 244, in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 1090, in request
+    self.check_exception(response)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\test\client.py", line 805, in check_exception
+    raise exc_value
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\viewsets.py", line 124, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\practice\drf\tena\inventory\views.py", line 808, in dispatch
+    transfer = self.get_object()
+               ^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\rest_framework\generics.py", line 87, in get_object
+    queryset = self.filter_queryset(self.get_queryset())
+                                    ^^^^^^^^^^^^^^^^^^^
+  File "C:\practice\drf\tena\inventory\views.py", line 629, in get_queryset
+    if user.role in (User.Role.SYSTEM_ADMIN, User.Role.CENTRAL_COORDINATOR):
+       ^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\utils\functional.py", line 253, in inner
+    return func(_wrapped, *args)
+           ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'AnonymousUser' object has no attribute 'role'
+
+======================================================================
+ERROR: test_dest_staff_cannot_dispatch (inventory.tests.TransferDispatchReceiptTests.test_dest_staff_cannot_dispatch)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1501, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_dispatch_reduces_source_and_releases_reservation (inventory.tests.TransferDispatchReceiptTests.test_dispatch_reduces_source_and_releases_reservation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1501, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_dispatch_twice_conflicts (inventory.tests.TransferDispatchReceiptTests.test_dispatch_twice_conflicts)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1501, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_receipt_creates_destination_batch_and_movement (inventory.tests.TransferDispatchReceiptTests.test_receipt_creates_destination_batch_and_movement)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1501, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_receipt_expiry_conflict_rejected (inventory.tests.TransferDispatchReceiptTests.test_receipt_expiry_conflict_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1501, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_receipt_over_approved_rejected (inventory.tests.TransferDispatchReceiptTests.test_receipt_over_approved_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1501, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_receipt_with_damaged_quarantines_batch (inventory.tests.TransferDispatchReceiptTests.test_receipt_with_damaged_quarantines_batch)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1501, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_short_receipt_creates_discrepancy_audit (inventory.tests.TransferDispatchReceiptTests.test_short_receipt_creates_discrepancy_audit)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1501, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_central_sees_all (inventory.tests.TransferScopingTests.test_central_sees_all)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1704, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_source_pharmacist_sees_transfer (inventory.tests.TransferScopingTests.test_source_pharmacist_sees_transfer)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1704, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+ERROR: test_unrelated_facility_cannot_see (inventory.tests.TransferScopingTests.test_unrelated_facility_cannot_see)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\inventory\tests.py", line 1704, in setUp
+    self.transfer = TransferRequest.objects.create(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\query.py", line 663, in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\base.py", line 545, in __init__
+    _setattr(self, field.name, rel_obj)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python311\Lib\site-packages\django\db\models\fields\related_descriptors.py", line 291, in __set__
+    raise ValueError(
+ValueError: Cannot assign "<StockMovement: RECEIPT IN 100 #1>": "TransferRequest.source_batch" must be a "StockBatch" instance.
+
+======================================================================
+FAIL: test_critical_when_days_of_stock_under_7 (coordination.tests.SupplyGapPriorityTests.test_critical_when_days_of_stock_under_7)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\practice\drf\tena\coordination\tests.py", line 312, in test_critical_when_days_of_stock_under_7
+    self.assertEqual(report.priority, "CRITICAL")
+AssertionError: SupplyGapReport.Priority.MEDIUM != 'CRITICAL'
+
+----------------------------------------------------------------------
+Ran 198 tests in 571.250s
+
+FAILED (failures=1, errors=41)
+Destroying test database for alias 'default'...
